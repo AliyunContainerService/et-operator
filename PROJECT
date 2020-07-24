@@ -1,0 +1,13 @@
+version: "2"
+domain: alibabacloud.com
+repo: github.com/kube-ai/kube-ai
+resources:
+- group: kai
+  version: v1alpha1
+  kind: TrainingJob
+- group: kai
+  version: v1alpha1
+  kind: ScaleOut
+- group: kai
+  version: v1alpha1
+  kind: ScaleIn

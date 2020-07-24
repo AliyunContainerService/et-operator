@@ -1,0 +1,7 @@
+apiVersion: kai.alibabacloud.com/v1alpha1
+kind: ScaleOut
+metadata:
+  name: scaleout-sample
+spec:
+  # Add fields here
+  foo: bar

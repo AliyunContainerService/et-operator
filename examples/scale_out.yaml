@@ -1,0 +1,10 @@
+apiVersion: kai.alibabacloud.com/v1alpha1
+kind: ScaleOut
+metadata:
+  generateName: elastic-training-scaleout-
+spec:
+  selector:
+    name: elastic-training
+  timeout: 300
+  toAdd:
+    count: 2

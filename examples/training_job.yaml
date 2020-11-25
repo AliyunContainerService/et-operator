@@ -1,0 +1,36 @@
+apiVersion: kai.alibabacloud.com/v1alpha1
+kind: TrainingJob
+metadata:
+  name: elastic-training
+  namespace: default
+spec:
+  cleanPodPolicy: Running
+  etReplicaSpecs:
+    launcher:
+      replicas: 1
+      template:
+        spec:
+          containers:
+          - command:
+            - sh
+            - -c
+            - horovodrun --log-level DEBUG --verbose -np 2 --min-np 1 --max-np 9 --host-discovery-script
+              /etc/edl/discover_hosts.sh python /examples/elastic/tensorflow2_mnist_elastic.py
+            image: registry.cn-huhehaote.aliyuncs.com/lumo/horovod:master-tf2.1.0-torch1.4.0-mxnet-py3.6-gpu
+            imagePullPolicy: Always
+            name: mnist-elastic
+    worker:
+      maxReplicas: 9
+      minReplicas: 1
+      replicas: 2
+      template:
+        spec:
+          containers:
+          - image: registry.cn-huhehaote.aliyuncs.com/lumo/horovod:master-tf2.1.0-torch1.4.0-mxnet-py3.6-gpu
+            imagePullPolicy: Always
+            name: mnist-elastic
+            resources:
+              limits:
+                nvidia.com/gpu: "1"
+              requests:
+                nvidia.com/gpu: "1"

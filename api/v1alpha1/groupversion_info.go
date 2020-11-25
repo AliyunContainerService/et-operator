@@ -32,4 +32,7 @@ var (
 
 	// AddToScheme adds the types in this group-version to the given scheme.
 	AddToScheme = SchemeBuilder.AddToScheme
+
+	// SchemeGroupVersionKind is the GroupVersionKind of the resource.
+	SchemeGroupVersionKind = GroupVersion.WithKind("TrainingJob")
 )

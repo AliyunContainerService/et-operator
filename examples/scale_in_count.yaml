@@ -1,0 +1,9 @@
+apiVersion: kai.alibabacloud.com/v1alpha1
+kind: ScaleIn
+metadata:
+  generateName: scalein-sample-
+spec:
+  selector:
+    name: elastic-training
+  toDelete:
+    count: 1

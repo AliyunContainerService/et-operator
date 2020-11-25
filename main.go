@@ -18,15 +18,18 @@ package main
 import (
 	"flag"
 	"os"
+	"time"
 
-	kaiv1alpha1 "github.com/kube-ai/kube-ai/api/v1alpha1"
-	"github.com/kube-ai/kube-ai/controllers"
+	kaiv1alpha1 "github.com/AliyunContainerService/et-operator/api/v1alpha1"
+	"github.com/AliyunContainerService/et-operator/pkg/controllers"
+	zapOpt "go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	// +kubebuilder:scaffold:imports
+	"go.uber.org/zap/zapcore"
 )
 
 var (
@@ -49,8 +52,19 @@ func main() {
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
 	flag.Parse()
 
+	//ctrl.SetLogger(zap.New(func(o *zap.Options) {
+	//	o.Development = true
+	//}))
+
 	ctrl.SetLogger(zap.New(func(o *zap.Options) {
-		o.Development = true
+		o.Development = false
+	}, func(o *zap.Options) {
+		o.ZapOpts = append(o.ZapOpts, zapOpt.AddCaller())
+	}, func(o *zap.Options) {
+		encCfg := zapOpt.NewProductionEncoderConfig()
+		encCfg.EncodeLevel = zapcore.CapitalLevelEncoder
+		encCfg.EncodeTime = zapcore.ISO8601TimeEncoder
+		o.Encoder = zapcore.NewConsoleEncoder(encCfg)
 	}))
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
@@ -63,28 +77,16 @@ func main() {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
-
-	if err = (&controllers.TrainingJobReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("TrainingJob"),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
+	const jobPollInterval = "5s"
+	if err = controllers.NewReconciler(mgr, parseDurationOrPanic(jobPollInterval)).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "TrainingJob")
 		os.Exit(1)
 	}
-	if err = (&controllers.ScaleOutReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("ScaleOut"),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
+	if err = controllers.NewScaleOutReconciler(mgr, parseDurationOrPanic(jobPollInterval)).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ScaleOut")
 		os.Exit(1)
 	}
-	if err = (&controllers.ScaleInReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("ScaleIn"),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
+	if err = controllers.NewScaleInReconciler(mgr, parseDurationOrPanic(jobPollInterval)).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ScaleIn")
 		os.Exit(1)
 	}
@@ -94,5 +96,13 @@ func main() {
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
+	}
+}
+
+func parseDurationOrPanic(duration string) time.Duration {
+	if parsed, err := time.ParseDuration(duration); err != nil {
+		panic("Unable to parse duration: " + duration)
+	} else {
+		return parsed
 	}
 }

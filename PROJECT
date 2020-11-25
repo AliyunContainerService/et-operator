@@ -1,6 +1,6 @@
 version: "2"
 domain: alibabacloud.com
-repo: github.com/kube-ai/kube-ai
+repo: github.com/AliyunContainerService/et-operator
 resources:
 - group: kai
   version: v1alpha1

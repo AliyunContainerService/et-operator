@@ -44,12 +44,12 @@ trainingjobs.kai.alibabacloud.com       2020-11-11T11:16:13Z
 Check the operator status
 
 ```
-kubectl get pod -n kube-ai
+kubectl -n kube-ai get pod
 ```
 
 ```
-NAME                                          READY   STATUS    RESTARTS   AGE
-et-operator-controller-manager-6d4688cf58-wvhbr   1/1     Running   0          5m
+NAME                          READY   STATUS    RESTARTS   AGE
+et-operator-ddd56ff8c-tdr2n   1/1     Running   0          59s
 
 ```
 

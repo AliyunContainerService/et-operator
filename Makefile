@@ -2,7 +2,7 @@
 # Image URL to use all building/pushing image targets
 # IMG ?= controller:latest
 GIT_SHORT_COMMIT=$(shell git rev-parse --short HEAD)
-IMG ?= registry.cn-huhehaote.aliyuncs.com/kube-ai/et-controller:${GIT_SHORT_COMMIT}
+IMG ?= registry.cn-hangzhou.aliyuncs.com/kube-ai/et-controller:${GIT_SHORT_COMMIT}
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
 
@@ -48,11 +48,11 @@ local-manifests:
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 deploy: manifests
 	cd config/manager && kustomize edit set image controller=${IMG}
-	kustomize build config/default | kubectl apply -f -
+	kustomize build config/default | kubectl create -f -
 
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: controller-gen
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=et-operator webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 	# set x-kubernetes-preserve-unknown-fields: true to launcher and worker's metadata
 	go run hack/crd_gen/main.go
 

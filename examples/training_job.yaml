@@ -15,8 +15,8 @@ spec:
             - sh
             - -c
             - horovodrun --log-level DEBUG --verbose -np 2 --min-np 1 --max-np 9 --host-discovery-script
-              /etc/edl/discover_hosts.sh python /examples/elastic/tensorflow2_mnist_elastic.py
-            image: registry.cn-huhehaote.aliyuncs.com/lumo/horovod:master-tf2.1.0-torch1.4.0-mxnet-py3.6-gpu
+              /etc/edl/discover_hosts.sh python /examples/elastic/tensorflow2/tensorflow2_mnist_elastic.py
+            image: registry.cn-huhehaote.aliyuncs.com/xiaozhou/horovod:0.21.0-tf2.3.0-torch1.6.0-mxnet1.5.0-py3.7-cpu
             imagePullPolicy: Always
             name: mnist-elastic
     worker:
@@ -26,7 +26,7 @@ spec:
       template:
         spec:
           containers:
-          - image: registry.cn-huhehaote.aliyuncs.com/lumo/horovod:master-tf2.1.0-torch1.4.0-mxnet-py3.6-gpu
+          - image: registry.cn-huhehaote.aliyuncs.com/xiaozhou/horovod:0.21.0-tf2.3.0-torch1.6.0-mxnet1.5.0-py3.7-cpu
             imagePullPolicy: Always
             name: mnist-elastic
             resources:

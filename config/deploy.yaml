@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Namespace
 metadata:
   labels:
-    control-plane: controller-manager
+    app: et-operator
   name: kube-ai
 ---
 apiVersion: apiextensions.k8s.io/v1
@@ -7688,10 +7688,18 @@ status:
   conditions: []
   storedVersions: []
 ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app: et-operator
+  name: et-operator
+  namespace: kube-ai
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: et-operatorleader-election-role
+  name: et-operator-leader-election
   namespace: kube-ai
 rules:
 - apiGroups:
@@ -7725,7 +7733,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   creationTimestamp: null
-  name: et-operatormanager-role
+  name: et-operator
 rules:
 - apiGroups:
   - ""
@@ -7781,6 +7789,18 @@ rules:
   - ""
   resources:
   - secrets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - serviceaccounts
   verbs:
   - create
   - delete
@@ -7869,57 +7889,81 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - rolebindings
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - roles
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: et-operatorleader-election-rolebinding
+  name: et-operator-leader-election
   namespace: kube-ai
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: et-operatorleader-election-role
+  name: et-operator-leader-election
 subjects:
 - kind: ServiceAccount
-  name: default
+  name: et-operator
   namespace: kube-ai
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: et-operatormanager-rolebinding
+  name: et-operator
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: et-operatormanager-role
+  name: et-operator
 subjects:
 - kind: ServiceAccount
-  name: default
+  name: et-operator
   namespace: kube-ai
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    control-plane: controller-manager
-  name: et-operatorcontroller-manager
+    app: et-operator
+  name: et-operator
   namespace: kube-ai
 spec:
   replicas: 1
   selector:
     matchLabels:
-      control-plane: controller-manager
+      app: et-operator
   template:
     metadata:
       labels:
-        control-plane: controller-manager
+        app: et-operator
     spec:
       containers:
       - args:
         - --enable-leader-election
         command:
         - /manager
-        image: registry.cn-huhehaote.aliyuncs.com/kube-ai/et-controller:d7829e2
+        image: registry.cn-hangzhou.aliyuncs.com/kube-ai/et-controller:52ccc8f
         name: manager
         resources:
           limits:
@@ -7928,4 +7972,5 @@ spec:
           requests:
             cpu: 100m
             memory: 20Mi
+      serviceAccountName: et-operator
       terminationGracePeriodSeconds: 10

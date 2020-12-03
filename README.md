@@ -8,15 +8,54 @@ Et-operator provides a set of Kubernetes Custom Resource Definition that makes i
 
 
 ## Design
+The `et-operator`, work with 3 new CRDs, `TrainingJob`, `ScaleIn` and `ScaleOut`.
 
-For more details about the design of this project, please read this Design document.
+### TrainingJob 
+User submit a `TrainingJob` CR to specify a training job detail, like launcher's and worker's image, entrypoint command, replicas of workers.
+The `et-operator` will receive the creation event, then create the sub resource (like pods, configmap, service, secret) of the `TrainingJob`, and 
+
+
+![TrainingJob](./docs/images/trainingjob.png)
+
+The `TrainingJob` will create workers pods and services, generate the `Secret` and `ConfigMap` for launcher pod,
+when all workers ready, then operator will create the launcher pod and sync pods status. 
+
+After launcher pod exit, `et-operator` will uppdate `TrainingJob` phase to `Success` or `Fail` according to pod's exit code,
+then do the cleanup.
+
+![TrainingJob Resource](./docs/images/trainingjob-resource.png)
+
+#### ScaleIN
+We can submit ScaleIn and ScaleOut resource to specify the scaleOut and scaleIn action of `TrainingJob`.
+
+After the `TrainingJob` start running, `et-operator` will continuously check whether there are available `ScaleIn` and `ScaleOut` CR, and execute it.  
+
+In `ScaleIn` CR, we can specify the trainingJob's name and which workers that need to scaleIn (by `count` or detail worker's name). 
+When `et-operator` find an available `ScaleIn` CR, it will start to execute the scalein operation.
+Firstly, it will update the host config of `TrainingJob`, 
+In horovod elastic mode, it needs a script that return the host's topology , the change of hosts will notify the launcher, then and it will shutdown the worker process not in hosts gracefully.  
+  
+After the hostFile updated, `et-operator` start to detect whether the launch process exist, 
+when `et-operator` confirm that the scalein worker's launch process not exit, it will delete the worker's resource.  
+
+![ScaleIn](./docs/images/scalein.png)
+
+
+#### ScaleOut
+In `ScaleOut` CR, we can specify the trainingJob's name and the count that we want to scaleout. 
+When `et-operator` start to execute the scalein operation,
+different from scaleIn, it will firstly create the new worker's resources.
+After worker's resources ready, then update the hostFile. 
+  
+
+![ScaleOut](./docs/images/scaleout.png)
 
 
 ## Setup
 ### Installation
 
 ```
-git clone https://http://github.com/aliyunContainerService/et-operator
+git clone http://github.com/aliyunContainerService/et-operator
 cd et-operator
 kubectl create -f config/deploy.yaml
 ```
@@ -136,8 +175,9 @@ elastic-training-worker-2                 1/1     Running            0          
 
 ## Roadmap
 
+* Use `kubectl exec` replace ssh: the block major problem is that `kubectl exec` will hang when target pod shutdown but what we want is to exit process. 
+* Support spot instance in public cloud platform, before node released, we should trigger a scaleIn to the training worker who's workers on the spot nodes.
 * Support fault tolerance
-* Support spot instance in public cloud, before node released, trigger a scalein to the training worker that on the node will be relased.
 
 ## Developing
 Prerequisites:

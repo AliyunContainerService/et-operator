@@ -3,8 +3,8 @@ package controllers
 import (
 	"context"
 	"fmt"
+
 	kaiv1alpha1 "github.com/AliyunContainerService/et-operator/api/v1alpha1"
-	commonv1 "github.com/AliyunContainerService/et-operator/pkg/controllers/api/v1"
 	logger "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -12,12 +12,13 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	//"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"strconv"
+	"strings"
+
 	common "github.com/AliyunContainerService/et-operator/pkg/controllers/api/v1"
 	"github.com/AliyunContainerService/et-operator/pkg/util"
 	"k8s.io/apimachinery/pkg/types"
 	utilpointer "k8s.io/utils/pointer"
-	"strconv"
-	"strings"
 )
 
 func (r *TrainingJobReconciler) createTrainingJobWorkers(job *kaiv1alpha1.TrainingJob) error {
@@ -25,7 +26,7 @@ func (r *TrainingJobReconciler) createTrainingJobWorkers(job *kaiv1alpha1.Traini
 	if cm, err := r.GetOrCreateSecret(job); cm == nil || err != nil {
 		msg := fmt.Sprintf("job(%s/%s) create secret failed, error: %v", job.Namespace, job.Name, err)
 		logger.Warn(msg)
-		updateStatus(job.GetJobStatus(), commonv1.JobFailed, trainingJobFailedReason, msg)
+		updateStatus(job.GetJobStatus(), common.JobFailed, trainingJobFailedReason, msg)
 		return nil
 	}
 
@@ -34,12 +35,12 @@ func (r *TrainingJobReconciler) createTrainingJobWorkers(job *kaiv1alpha1.Traini
 	if err := r.CreateWorkers(job, workers); err != nil {
 		msg := fmt.Sprintf("job(%s/%s) create workerPods failed, error: %v", job.Namespace, job.Name, err)
 		logger.Warn(msg)
-		updateStatus(job.GetJobStatus(), commonv1.JobFailed, trainingJobFailedReason, msg)
+		updateStatus(job.GetJobStatus(), common.JobFailed, trainingJobFailedReason, msg)
 		return nil
 	}
 	msg := fmt.Sprintf("create trainingjob(%v/%v) workers", job.Namespace, job.Name)
 	logger.Infof(msg)
-	updateJobConditions(job.GetJobStatus(), commonv1.WorkersCreated, "", msg)
+	updateJobConditions(job.GetJobStatus(), common.WorkersCreated, "", msg)
 	return nil
 }
 
@@ -70,7 +71,7 @@ func (r *TrainingJobReconciler) waitWorkersRunning(job *kaiv1alpha1.TrainingJob)
 	if running >= int(*job.Spec.ETReplicaSpecs.Worker.Replicas) {
 		msg := fmt.Sprintf("trainingjob(%s/%s) all workers (%d) are running", job.Namespace, job.Name, running)
 		logger.Infof(msg)
-		updateJobConditions(job.GetJobStatus(), commonv1.WorkersReady, "", msg)
+		updateJobConditions(job.GetJobStatus(), common.WorkersReady, "", msg)
 	}
 	return nil
 }
@@ -110,7 +111,7 @@ func (r *TrainingJobReconciler) handleWorkersFailed(job *kaiv1alpha1.TrainingJob
 		strings.Join(job.Status.CurrentWorkers, ",")) != 0
 
 	// update hostfile when find workers state updated
-	if currentWorkersChange && hasCondition(*job.GetJobStatus(), commonv1.JobRunning) {
+	if currentWorkersChange && hasCondition(*job.GetJobStatus(), common.JobRunning) {
 		script := hostfileUpdateScript(getHostfilePath(job), currentWorkers, getSlots(job))
 		if _, _, err := r.executeOnLauncher(job, script); err != nil {
 			return err
@@ -131,7 +132,7 @@ func (r *TrainingJobReconciler) handleWorkersFailed(job *kaiv1alpha1.TrainingJob
 				restartPods = append(restartPods, pod.Name)
 			}
 		} else {
-			if restartPolicy == commonv1.RestartPolicyAlways {
+			if restartPolicy == common.RestartPolicyAlways {
 				restartPods = append(restartPods, name)
 			}
 			msg := fmt.Sprintf("trainingjob(%s/%s): worker %s phase is %s.", job.Namespace, job.Name, name, "Deleted")
@@ -193,7 +194,7 @@ func podNeedRestart(restartPolicy common.RestartPolicy, pod corev1.Pod) bool {
 	return false
 }
 
-func workerReplicaStatuses(replicaStatus *commonv1.ReplicaStatus, pods []corev1.Pod) (running, evict int) {
+func workerReplicaStatuses(replicaStatus *common.ReplicaStatus, pods []corev1.Pod) (running, evict int) {
 	for i := 0; i < len(pods); i++ {
 		//logger.Infof("worker %v: name: %v", i, workers[i].Name)
 		switch pods[i].Status.Phase {

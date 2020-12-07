@@ -188,7 +188,7 @@ Prerequisites:
 ```
 mkdir -p $(go env GOPATH)/src/github.com/aliyunContainerService
 cd $(go env GOPATH)/src/github.com/aliyunContainerService
-git clone https://http://github.com/aliyunContainerService/et-operator
+git clone https://github.com/aliyunContainerService/et-operator
 cd et-operator
 make
 ```

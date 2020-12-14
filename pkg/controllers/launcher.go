@@ -84,6 +84,28 @@ func (r *TrainingJobReconciler) syncLauncherState(job *kaiv1alpha1.TrainingJob) 
 		logger.Warnf("get launcher failed, error: %v", err)
 		return err
 	}
+	if launcher == nil {
+		logger.Warn("launcher not found")
+		switch job.Spec.ETReplicaSpecs.Launcher.RestartPolicy {
+		case commonv1.RestartPolicyAlways:
+			if _, err := r.CreateLauncher(job); err != nil {
+				msg := fmt.Sprintf("job(%s/%s) create launcher failed, error: %v", job.Namespace, job.Name, err)
+				logger.Warn(msg)
+				updateStatus(job.GetJobStatus(), commonv1.JobFailed, trainingJobFailedReason, msg)
+			}
+		case commonv1.RestartPolicyNever:
+			job.Status.ReplicaStatuses[commonv1.ReplicaType(kaiv1alpha1.ETReplicaTypeLauncher)].Failed = 1
+			msg := fmt.Sprintf("job(%s/%s) has failed", job.Namespace, job.Name)
+			reason := trainingJobFailedReason
+			r.recorder.Event(job, corev1.EventTypeWarning, reason, msg)
+			if !isEvicted(*job.GetJobStatus()) && job.Status.CompletionTime == nil {
+				now := metav1.Now()
+				job.Status.CompletionTime = &now
+			}
+			updateStatus(job.GetJobStatus(), commonv1.JobFailed, reason, msg)
+		}
+		return nil
+	}
 
 	if isPodSucceeded(launcher) {
 		job.Status.ReplicaStatuses[commonv1.ReplicaType(kaiv1alpha1.ETReplicaTypeLauncher)].Succeeded = 1

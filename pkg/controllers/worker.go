@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"time"
 
 	kaiv1alpha1 "github.com/AliyunContainerService/et-operator/api/v1alpha1"
 	logger "github.com/sirupsen/logrus"
@@ -54,6 +55,12 @@ func (r *TrainingJobReconciler) syncWorkersState(job *kaiv1alpha1.TrainingJob) e
 
 	r.workerReplicasStatus(job.GetJobStatus(), workers)
 
+	r.handleWorkersAutoScale(job, workers)
+	//err = r.handleWorkersAutoScale(job, workers)
+	//if err != nil {
+	//	return err
+	//}
+
 	err = r.handleWorkersFailed(job, workers)
 	if err != nil {
 		return err
@@ -73,6 +80,80 @@ func (r *TrainingJobReconciler) waitWorkersRunning(job *kaiv1alpha1.TrainingJob)
 		logger.Infof(msg)
 		updateJobConditions(job.GetJobStatus(), common.WorkersReady, "", msg)
 	}
+	return nil
+}
+
+func (r *TrainingJobReconciler) handleWorkersAutoScale(job *kaiv1alpha1.TrainingJob, pods []corev1.Pod) error {
+	if *job.Spec.ScalePolicy != "Auto" {
+		logger.Info("no need to autoscale")
+		return nil
+	}
+	currentWorkers := []string{}
+	maxWorkers := job.Spec.ETReplicaSpecs.Worker.MaxReplicas
+	currentWorkers = job.Status.CurrentWorkers
+
+	if len(currentWorkers) != len(pods) {
+		logger.Info("no need to autoscale when currentworkers not equals to worker pods.")
+		return nil
+	}
+
+	var autoScaleTimeout int32 = 30
+	var autoScaleInterval int32 = 60
+	if job.Spec.AutoScaleIntervalSeconds != nil {
+		autoScaleInterval = *job.Spec.AutoScaleIntervalSeconds
+	}
+	if job.Spec.AutoScaleTimeoutSeconds != nil {
+		autoScaleTimeout = *job.Spec.AutoScaleTimeoutSeconds
+	}
+	scaleCount := *maxWorkers - int32(len(currentWorkers))
+
+	hasScaling := false
+	scalingTimeout := false
+	for _, condition := range job.Status.Conditions {
+		if condition.Type == common.Scaling && condition.Reason == scalingStartReason {
+			hasScaling = true
+			scalingTimeout = condition.LastUpdateTime.Add(time.Duration(autoScaleInterval) * time.Second).Before(time.Now())
+		}
+	}
+	if scaleCount > 0 && (!hasScaling || scalingTimeout) {
+		scaleOut := kaiv1alpha1.ScaleOut{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      job.Name + "-autoscaleout",
+				Namespace: job.Namespace,
+			},
+			Spec: kaiv1alpha1.ScaleOutSpec{
+				Selector: kaiv1alpha1.Selector{Name: job.Name},
+				ScaleScriptSpec: kaiv1alpha1.ScaleScriptSpec{
+					Timeout: &autoScaleTimeout,
+				},
+				ToAdd: &kaiv1alpha1.ToAddSpec{Count: &scaleCount},
+			},
+		}
+
+		msg := fmt.Sprintf("trainingjob(%s/%s): create autoscaleout %++v", job.Namespace, job.Name, scaleOut.Spec)
+		logger.Infof(msg)
+		if err := r.Client.Create(context.Background(), &scaleOut); err != nil {
+			msg := fmt.Sprintf("trainingjob(%s/%s): failed to create autoscale %++v.", job.Namespace, job.Name, scaleOut.Spec)
+			r.recorder.Event(job, corev1.EventTypeWarning, autoScalingException, msg)
+			logger.Infof(msg)
+			return err
+		}
+		// call delete after interval
+		time.AfterFunc(time.Duration(autoScaleInterval)*time.Second, func() {
+			if err := r.Client.Delete(context.Background(), &scaleOut); err != nil {
+				msg := fmt.Sprintf("trainingjob(%s/%s): failed to delete autoscale %++v, err: %s", job.Namespace, job.Name, scaleOut, err)
+				r.recorder.Event(job, corev1.EventTypeWarning, autoScalingException, msg)
+				logger.Infof(msg)
+			}
+			msg := fmt.Sprintf("trainingjob(%s/%s): delete autoscaleout %++v", job.Namespace, job.Name, scaleOut.Spec)
+			logger.Infof(msg)
+		})
+
+		r.recorder.Event(job, corev1.EventTypeNormal, scalingStartReason, msg)
+		updateJobConditions(job.GetJobStatus(), common.Scaling, scalingStartReason, msg)
+		return nil
+	}
+
 	return nil
 }
 

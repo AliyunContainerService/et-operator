@@ -43,6 +43,16 @@ type TrainingJobSpec struct {
 	// Defaults to 1.
 	// +optional
 	SlotsPerWorker *int32 `json:"slotsPerWorker,omitempty"`
+
+	// ScalePolicy defines whether to enable auto scale of workers if possible.
+	// +optional
+	ScalePolicy *string `json:"scalePolicy,omitempty"`
+	// AutoScaleIntervalSeconds defines the period of seconds between each auto scale.
+	// +optional
+	AutoScaleIntervalSeconds *int32 `json:"autoScaleIntervalSeconds,omitempty"`
+	// AutoScaleTimeoutSeconds defines the timeout seconds of auto scale.
+	// +optional
+	AutoScaleTimeoutSeconds *int32 `json:"autoScaleTimeoutSeconds,omitempty"`
 }
 
 type ETReplicaSpecs struct {

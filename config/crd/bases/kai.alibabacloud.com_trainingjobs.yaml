@@ -43,6 +43,16 @@ spec:
           spec:
             description: TrainingJobSpec defines the desired state of TrainingJob
             properties:
+              autoScaleIntervalSeconds:
+                description: AutoScaleIntervalSeconds defines the period of seconds
+                  between each auto scale.
+                format: int32
+                type: integer
+              autoScaleTimeoutSeconds:
+                description: AutoScaleTimeoutSeconds defines the timeout seconds of
+                  auto scale.
+                format: int32
+                type: integer
               cleanPodPolicy:
                 description: CleanPodPolicy defines the policy that whether to kill
                   pods after the job completes. Defaults to None.
@@ -13132,6 +13142,10 @@ spec:
                 - worker
                 type: object
                 x-kubernetes-preserve-unknown-fields: true
+              scalePolicy:
+                description: ScalePolicy defines whether to enable auto scale of workers
+                  if possible.
+                type: string
               slotsPerWorker:
                 description: Specifies the number of slots per worker used in hostfile.
                   Defaults to 1.

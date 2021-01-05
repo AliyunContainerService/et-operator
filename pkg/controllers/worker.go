@@ -84,7 +84,7 @@ func (r *TrainingJobReconciler) waitWorkersRunning(job *kaiv1alpha1.TrainingJob)
 }
 
 func (r *TrainingJobReconciler) handleWorkersAutoScale(job *kaiv1alpha1.TrainingJob, pods []corev1.Pod) error {
-	if *job.Spec.ScalePolicy != "Auto" {
+	if job.Spec.ScalePolicy == nil || *job.Spec.ScalePolicy != "Auto" {
 		logger.Info("no need to autoscale")
 		return nil
 	}

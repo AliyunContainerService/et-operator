@@ -87,18 +87,21 @@ func (r *TrainingJobReconciler) DeleteWorkers(trainingJob *kaiv1alpha1.TrainingJ
 
 func (r *TrainingJobReconciler) checkWorkerShutdown(job *kaiv1alpha1.TrainingJob, workers []string) ([]string, error) {
 	result := []string{}
-	out, _, err := r.executeOnLauncher(job, fmt.Sprintf("ps -ef | grep %s", getKubexecPath()))
+	attachCmd := "ssh -o PasswordAuthentication=no -o StrictHostKeyChecking=no"
+	if job.GetAttachMode() == kaiv1alpha1.AttachModeKubexec {
+		attachCmd = getKubexecPath()
+	}
+	out, _, err := r.executeOnLauncher(job, fmt.Sprintf("ps -ef | grep '%s'", attachCmd))
 	if err != nil {
 		logger.Errorf("failed to exec on %s, err: %++v", job.Name, err)
 		return result, err
 	}
 	logger.Infof("launcher execute status is : %s", out)
 	for _, pod := range workers {
-		if strings.Contains(out, fmt.Sprintf("%s %s", getKubexecPath(), pod)) {
+		if strings.Contains(out, fmt.Sprintf("%s %s", attachCmd, pod)) {
 			continue
 		} else {
 			result = append(result, pod)
-
 		}
 	}
 	return result, nil

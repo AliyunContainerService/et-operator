@@ -26,6 +26,8 @@ const (
 
 	// scalingInCreatedReason is added in a scalein when it is created.
 	scalingStartReason = "ScalingStart"
+	// autoScalingException
+	autoScalingException = "TrainingJobAutoScaleFailed"
 )
 
 // initializeTrainingJobStatuses initializes the ReplicaStatuses for TrainingJob.

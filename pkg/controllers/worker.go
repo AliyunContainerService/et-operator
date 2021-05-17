@@ -24,11 +24,13 @@ import (
 
 func (r *TrainingJobReconciler) createTrainingJobWorkers(job *kaiv1alpha1.TrainingJob) error {
 
-	if cm, err := r.GetOrCreateSecret(job); cm == nil || err != nil {
-		msg := fmt.Sprintf("job(%s/%s) create secret failed, error: %v", job.Namespace, job.Name, err)
-		logger.Warn(msg)
-		updateStatus(job.GetJobStatus(), common.JobFailed, trainingJobFailedReason, msg)
-		return nil
+	if job.GetAttachMode() == kaiv1alpha1.AttachModeSSH {
+		if cm, err := r.GetOrCreateSecret(job); cm == nil || err != nil {
+			msg := fmt.Sprintf("job(%s/%s) create secret failed, error: %v", job.Namespace, job.Name, err)
+			logger.Warn(msg)
+			updateStatus(job.GetJobStatus(), common.JobFailed, trainingJobFailedReason, msg)
+			return nil
+		}
 	}
 
 	workers := getJobReplicasWorkers(job)
@@ -350,7 +352,9 @@ func (r *TrainingJobReconciler) createWorker(job *kaiv1alpha1.TrainingJob, index
 		// If the worker Pod doesn't exist, we'll create it.
 		if errors.IsNotFound(err) {
 			worker := workerPodTempl(name, indexStr)
-			util.MountRsaKey(worker, job.Name)
+			if job.GetAttachMode() == kaiv1alpha1.AttachModeSSH {
+				util.MountRsaKey(worker, job.Name)
+			}
 			if err = r.Create(context.Background(), worker); err != nil {
 				r.recorder.Eventf(job, corev1.EventTypeWarning, trainingJobFailedReason, "worker pod created failed: %v", err)
 				return nil, err
@@ -487,6 +491,7 @@ func (r *TrainingJobReconciler) DeleteWorkerPods(job *kaiv1alpha1.TrainingJob, p
 	return nil
 }
 
+// @Deprecated
 func (r *TrainingJobReconciler) GetOrCreateSecret(job *kaiv1alpha1.TrainingJob) (*corev1.Secret, error) {
 	s := &corev1.Secret{}
 	req := ctrl.Request{}

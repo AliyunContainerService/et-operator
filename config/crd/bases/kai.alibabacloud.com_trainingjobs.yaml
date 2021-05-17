@@ -13146,6 +13146,10 @@ spec:
                 description: ScalePolicy defines whether to enable auto scale of workers
                   if possible.
                 type: string
+              launcherAttachMode:
+                description: Specifies the mode when launcher attach to workers. available
+                  option is ssh / kubexec Defaults is kubexec.
+                type: string
               slotsPerWorker:
                 description: Specifies the number of slots per worker used in hostfile.
                   Defaults to 1.

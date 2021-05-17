@@ -5,14 +5,14 @@ import (
 	"fmt"
 	kaiv1alpha1 "github.com/AliyunContainerService/et-operator/api/v1alpha1"
 	commonv1 "github.com/AliyunContainerService/et-operator/pkg/controllers/api/v1"
+	"github.com/AliyunContainerService/et-operator/pkg/util"
 	logger "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
-	//"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"github.com/AliyunContainerService/et-operator/pkg/util"
+
 	"k8s.io/apimachinery/pkg/api/meta"
 )
 
@@ -189,7 +189,9 @@ func (r *TrainingJobReconciler) CreateLauncher(obj interface{}) (*corev1.Pod, er
 		return nil, fmt.Errorf("%+v is not a type of TrainingJob", job)
 	}
 	launcher := newLauncher(job)
-	util.MountRsaKey(launcher, job.Name)
+	if job.GetAttachMode() == kaiv1alpha1.AttachModeSSH {
+		util.MountRsaKey(launcher, job.Name)
+	}
 	err := r.Create(context.Background(), launcher)
 	if err != nil {
 		r.recorder.Eventf(job, corev1.EventTypeWarning, trainingJobFailedReason, "launcher pod created failed: %v", err)

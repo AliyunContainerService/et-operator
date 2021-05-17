@@ -48,10 +48,13 @@ func newLauncher(obj interface{}) *corev1.Pod {
 			Name:      kubectlVolumeName,
 			MountPath: kubectlMountPath,
 		})
-	//container.Env = append(container.Env, corev1.EnvVar{
-	//	Name:  "OMPI_MCA_plm_rsh_agent",
-	//	Value: getKubexecPath(),
-	//})
+
+	if job.GetAttachMode() == kaiv1alpha1.AttachModeKubexec {
+		container.Env = append(container.Env, corev1.EnvVar{
+			Name:  "OMPI_MCA_plm_rsh_agent",
+			Value: getKubexecPath(),
+		})
+	}
 	podSpec.Spec.Containers[0] = container
 	podSpec.Spec.ServiceAccountName = launcherName
 
@@ -221,8 +224,11 @@ func newWorker(obj interface{}, name string, index string) *corev1.Pod {
 
 	// if we want to use ssh, will start sshd service firstly.
 	if len(container.Command) == 0 {
-		//container.Command = []string{"sh", "-c", "sleep 365d"}
-		container.Command = []string{"sh", "-c", "/usr/sbin/sshd  && sleep 365d"}
+		if job.GetAttachMode() == kaiv1alpha1.AttachModeSSH {
+			container.Command = []string{"sh", "-c", "/usr/sbin/sshd  && sleep 365d"}
+		} else {
+			container.Command = []string{"sh", "-c", "sleep 365d"}
+		}
 	}
 	podSpec.Spec.Containers[0] = container
 

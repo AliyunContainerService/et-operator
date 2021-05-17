@@ -462,6 +462,11 @@ func (in *TrainingJobSpec) DeepCopyInto(out *TrainingJobSpec) {
 		**out = **in
 	}
 	in.ETReplicaSpecs.DeepCopyInto(&out.ETReplicaSpecs)
+	if in.LauncherAttachMode != nil {
+		in, out := &in.LauncherAttachMode, &out.LauncherAttachMode
+		*out = new(string)
+		**out = **in
+	}
 	if in.SlotsPerWorker != nil {
 		in, out := &in.SlotsPerWorker, &out.SlotsPerWorker
 		*out = new(int32)

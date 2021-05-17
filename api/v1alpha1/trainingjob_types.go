@@ -39,6 +39,12 @@ type TrainingJobSpec struct {
 	// +kubebuilder:pruning:PreserveUnknownFields
 	ETReplicaSpecs ETReplicaSpecs `json:"etReplicaSpecs"`
 
+	// Specifies the mode when launcher attach to workers.
+	// available option is ssh / kubexec
+	// Defaults is kubexec.
+	// +optional
+	LauncherAttachMode *string `json:"launcherAttachMode,omitempty"`
+
 	// Specifies the number of slots per worker used in hostfile.
 	// Defaults to 1.
 	// +optional
@@ -96,6 +102,9 @@ const (
 
 	// ETReplicaTypeWorker is the type for worker replicas.
 	ETReplicaTypeWorker ETReplicaType = "Worker"
+
+	AttachModeSSH     = "ssh"
+	AttachModeKubexec = "kubexec"
 )
 
 // TrainingJobStatus defines the observed state of TrainingJob
@@ -145,6 +154,13 @@ func (j *TrainingJob) GetJobStatus() *common.JobStatus {
 
 func (j *TrainingJob) GetStatus() interface{} {
 	return &j.Status
+}
+
+func (j *TrainingJob) GetAttachMode() string {
+	if j.Spec.LauncherAttachMode == nil {
+		return AttachModeSSH
+	}
+	return *j.Spec.LauncherAttachMode
 }
 
 func init() {

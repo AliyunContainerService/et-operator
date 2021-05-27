@@ -17,6 +17,8 @@ const (
 	trainingJobRunningReason = "TrainingJobRunning"
 	// trainingJobFailedReason is added in a trainingjob when it is failed.
 	trainingJobFailedReason = "TrainingJobFailed"
+	// spec invalidate failed
+	trainingJobValidateFailedReason = "TrainingJobValidateFailed"
 	// trainingJobEvict
 	trainingJobEvict = "TrainingJobEvicted"
 	// trainingJobWorkerException
@@ -53,6 +55,7 @@ func isScaleFinished(status common.JobStatus) bool {
 func isScaleFailed(status common.JobStatus) bool {
 	return hasCondition(status, common.ScaleFailed)
 }
+
 func isScaleSucceeded(status common.JobStatus) bool {
 	return hasCondition(status, common.ScaleSucceeded)
 }

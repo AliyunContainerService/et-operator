@@ -70,6 +70,7 @@ spec:
               toDelete:
                 properties:
                   count:
+                    format: int32
                     type: integer
                   podNames:
                     items:

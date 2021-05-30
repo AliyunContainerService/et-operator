@@ -191,6 +191,13 @@ func (r *TrainingJobReconciler) updateCurrentScaler(job *kaiv1alpha1.TrainingJob
 	return nil
 }
 
+func (r *TrainingJobReconciler) updateScalerAbort(scaleObj Scaler, trainingJob *kaiv1alpha1.TrainingJob, msg string) error {
+	logger.Error(msg)
+	r.recorder.Event(scaleObj, corev1.EventTypeWarning, "", msg)
+	reason := fmt.Sprintf("%s%s", scaleObj.GetScaleType(), commonv1.ValidateFailed)
+	return r.updateScalerState(scaleObj, trainingJob, newCondition(commonv1.ScaleAborted, reason, msg))
+}
+
 func (r *TrainingJobReconciler) updateScalerFailed(scaleObj Scaler, trainingJob *kaiv1alpha1.TrainingJob, msg string) error {
 	logger.Error(msg)
 	r.recorder.Event(scaleObj, corev1.EventTypeWarning, "", msg)

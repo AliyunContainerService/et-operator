@@ -19,9 +19,9 @@ func (r *TrainingJobReconciler) executeScaleOut(job *kaiv1alpha1.TrainingJob, sc
 
 	initializeJobStatus(scaleOut.GetJobStatus())
 
-	if err := r.validateScaleOut(scaleOut); err != nil {
-		r.updateScalerFailed(scaleOut, job, err.Error())
-		return err
+	if err := r.validateScaleOut(job, scaleOut); err != nil {
+		r.updateScalerAbort(scaleOut, job, err.Error())
+		return nil
 	}
 
 	if err := r.setScaleOutWorkers(job, scaleOut); err != nil {
@@ -65,14 +65,15 @@ func (r *TrainingJobReconciler) executeScaleOut(job *kaiv1alpha1.TrainingJob, sc
 	return nil
 }
 
-func (r *TrainingJobReconciler) validateScaleOut(scaleOut *kaiv1alpha1.ScaleOut) error {
+func (r *TrainingJobReconciler) validateScaleOut(job *kaiv1alpha1.TrainingJob, scaleOut *kaiv1alpha1.ScaleOut) error {
 	if scaleOut.Spec.ToAdd == nil || scaleOut.Spec.ToAdd.Count == nil {
 		return fmt.Errorf(".spec.toAdd.count shouldn't be empty")
 	}
-	if *scaleOut.Spec.ToAdd.Count <= 0 {
+	cnt := *scaleOut.Spec.ToAdd.Count
+	if cnt <= 0 {
 		return fmt.Errorf(".spec.toAdd.count shouldn be greater than 0")
 	}
-	return nil
+	return r.validateReplica(job, &cnt)
 }
 
 func (r *TrainingJobReconciler) ScaleOutFailed(job *kaiv1alpha1.TrainingJob, scaleOut *kaiv1alpha1.ScaleOut, msg string) error {

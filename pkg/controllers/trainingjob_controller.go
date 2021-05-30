@@ -187,6 +187,30 @@ func GenLabels(jobName string) map[string]string {
 	}
 }
 
+func (r *TrainingJobReconciler) validateReplica(job *kaiv1alpha1.TrainingJob, delta *int32) error {
+	replicas := job.Spec.ETReplicaSpecs.Worker.Replicas
+	if nil == replicas {
+		return fmt.Errorf("worker replca empty")
+	}
+	replica := *replicas
+	if delta != nil {
+		replica += *delta
+	}
+	maxReplica := job.Spec.ETReplicaSpecs.Worker.MaxReplicas
+	if nil != maxReplica {
+		if replica > *maxReplica {
+			return fmt.Errorf("worker replica:%d > max:%d", replica, *maxReplica)
+		}
+	}
+	minReplica := job.Spec.ETReplicaSpecs.Worker.MinReplicas
+	if nil != minReplica {
+		if replica < *minReplica {
+			return fmt.Errorf("worker replica:%d < min:%d", replica, *minReplica)
+		}
+	}
+	return nil
+}
+
 func (r *TrainingJobReconciler) ReconcileJobs(job *kaiv1alpha1.TrainingJob) (result reconcile.Result, err error) {
 	oldJobStatus := job.Status.DeepCopy()
 
@@ -244,6 +268,7 @@ func (r *TrainingJobReconciler) initializeJob(job *kaiv1alpha1.TrainingJob) {
 		now := metav1.Now()
 		job.Status.StartTime = &now
 	}
+
 	return
 }
 
@@ -268,11 +293,18 @@ type Step struct {
 }
 
 func (r *TrainingJobReconciler) reconcileResource(job *kaiv1alpha1.TrainingJob) error {
+	if err := r.validateReplica(job, nil); err != nil {
+		logger.Warnf("job:%s phase:%s validate replica failed:%s", job.Name, job.Status.Phase, err)
+		updateJobConditions(job.GetJobStatus(), commonv1.JobFailed, trainingJobValidateFailedReason, err.Error())
+		updatePhase(job.GetJobStatus(), commonv1.JobFailed)
+		return nil
+	}
 	steps := r.newSteps()
 	err := r.doSteps(job, steps)
 	if err != nil {
 		r.Log.Error(err, "failed to reconcileResource")
 	}
+
 	return err
 }
 

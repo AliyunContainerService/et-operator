@@ -132,9 +132,11 @@ const (
 	// reached phase failed with no restarting.
 	// The training has failed its execution.
 	JobFailed JobConditionType = "Failed"
+	ValidateFailed JobConditionType = "ValidateFailed"
 
 	Scaling        JobConditionType = "Scaling"
 	ScaleFailed    JobConditionType = "ScaleFailed"
+	ScaleAborted    JobConditionType = "ScaleAborted"
 	ScaleSucceeded JobConditionType = "ScaleSucceeded"
 	ScriptExecuted JobConditionType = "ScriptExecuted"
 

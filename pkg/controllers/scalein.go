@@ -12,6 +12,19 @@ import (
 	"strings"
 )
 
+func (r *TrainingJobReconciler) validateScaleIn(job *kaiv1alpha1.TrainingJob, scaleIn *kaiv1alpha1.ScaleIn) error {
+	toDelete := scaleIn.Spec.ToDelete
+	if toDelete == nil {
+		return fmt.Errorf(".spec.toDelete.count shouldn't be empty")
+	}
+	cnt := int32((*toDelete).Count)
+	if cnt <= 0 {
+		return fmt.Errorf(".spec.toAdd.count shouldn be greater than 0")
+	}
+	deltaCnt := -cnt
+	return r.validateReplica(job, &deltaCnt)
+}
+
 func (r *TrainingJobReconciler) executeScaleIn(job *kaiv1alpha1.TrainingJob, scaleIn *kaiv1alpha1.ScaleIn) error {
 	if scaleIn.DeletionTimestamp != nil || isScaleFinished(*scaleIn.GetJobStatus()) {
 		logger.Info("reconcile cancelled, scalein does not need to do reconcile or has been deleted")
@@ -20,8 +33,12 @@ func (r *TrainingJobReconciler) executeScaleIn(job *kaiv1alpha1.TrainingJob, sca
 
 	initializeJobStatus(scaleIn.GetJobStatus())
 
-	//TODO: Validate the scalein count for minSize
-	err := r.setsSaleInToDelete(job, scaleIn)
+	if err := r.validateScaleIn(job, scaleIn); err != nil {
+		r.updateScalerAbort(scaleIn, job, err.Error())
+		return nil
+	}
+
+	err := r.setsScaleInToDelete(job, scaleIn)
 	if err != nil {
 		msg := fmt.Sprintf("%s get to delete workers name failed, error: %v", scaleIn.GetFullName(), err)
 		r.updateScalerFailed(scaleIn, job, msg)
@@ -132,7 +149,7 @@ func (r *TrainingJobReconciler) isWorkersDeleted(namespace string, workersName [
 	return true, nil
 }
 
-func (r *TrainingJobReconciler) setsSaleInToDelete(job *kaiv1alpha1.TrainingJob, scaleIn *kaiv1alpha1.ScaleIn) error {
+func (r *TrainingJobReconciler) setsScaleInToDelete(job *kaiv1alpha1.TrainingJob, scaleIn *kaiv1alpha1.ScaleIn) error {
 	podNames := scaleIn.Status.ToDeletePods
 	if len(podNames) != 0 {
 		return /*filterPodNames(workers, podNames, false), */ nil
@@ -148,9 +165,9 @@ func (r *TrainingJobReconciler) setsSaleInToDelete(job *kaiv1alpha1.TrainingJob,
 	if toDelete.PodNames != nil {
 		workers = filterPodNames(workers, toDelete.PodNames, false)
 	} else if toDelete.Count > 0 {
-		if toDelete.Count < len(workers) {
+		if int(toDelete.Count) < len(workers) {
 			allPodNames := getSortPodNames(job.Name, workers)
-			deletePodNames := allPodNames[len(workers)-toDelete.Count:]
+			deletePodNames := allPodNames[len(workers)-int(toDelete.Count):]
 			workers = filterPodNames(workers, deletePodNames, false)
 		} else {
 			return fmt.Errorf(".spec.toDelete.count should be less than current replicas %d", len(workers))

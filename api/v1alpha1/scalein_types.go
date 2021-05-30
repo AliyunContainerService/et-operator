@@ -41,7 +41,7 @@ type ScaleInSpec struct {
 }
 
 type ToDeleteSpec struct {
-	Count    int      `json:"count,omitempty"`
+	Count    int32    `json:"count,omitempty"`
 	PodNames []string `json:"podNames,omitempty"`
 }
 

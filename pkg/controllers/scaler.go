@@ -3,16 +3,16 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	kaiv1alpha1 "github.com/AliyunContainerService/et-operator/api/v1alpha1"
 	common "github.com/AliyunContainerService/et-operator/pkg/controllers/api/v1"
-	commonv1 "github.com/AliyunContainerService/et-operator/pkg/controllers/api/v1"
 	logger "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
 )
 
 func (r *TrainingJobReconciler) executeScaling(job *kaiv1alpha1.TrainingJob) error {
@@ -146,7 +146,7 @@ func (r *TrainingJobReconciler) executeScaleScript(trainingJob *kaiv1alpha1.Trai
 		return err
 	}
 
-	updateJobConditions(scaler.GetJobStatus(), commonv1.ScriptExecuted, "", msg)
+	updateJobConditions(scaler.GetJobStatus(), common.ScriptExecuted, "", msg)
 	return nil
 }
 
@@ -183,7 +183,7 @@ func (r *TrainingJobReconciler) updateLatestScaler(job *kaiv1alpha1.TrainingJob,
 func (r *TrainingJobReconciler) updateCurrentScaler(job *kaiv1alpha1.TrainingJob, scaleItem Scaler) error {
 	job.Status.CurrentScaler = scaleItem.GetFullName()
 	msg := fmt.Sprintf("trainingJobob(%s/%s) execute %s", job.Namespace, job.Name, scaleItem.GetFullName())
-	r.updateScalerState(scaleItem, job, newCondition(commonv1.Scaling, scalingStartReason, msg))
+	r.updateScalerState(scaleItem, job, newCondition(common.Scaling, scalingStartReason, msg))
 
 	if err := r.updateObjectStatus(scaleItem, nil); err != nil {
 		return err
@@ -201,22 +201,22 @@ func (r *TrainingJobReconciler) updateScalerAbort(scaleObj Scaler, trainingJob *
 func (r *TrainingJobReconciler) updateScalerFailed(scaleObj Scaler, trainingJob *kaiv1alpha1.TrainingJob, msg string) error {
 	logger.Error(msg)
 	r.recorder.Event(scaleObj, corev1.EventTypeWarning, "", msg)
-	reason := fmt.Sprintf("%s%s", scaleObj.GetScaleType(), commonv1.JobFailed)
-	return r.updateScalerState(scaleObj, trainingJob, newCondition(commonv1.ScaleFailed, reason, msg))
+	reason := fmt.Sprintf("%s%s", scaleObj.GetScaleType(), common.JobFailed)
+	return r.updateScalerState(scaleObj, trainingJob, newCondition(common.ScaleFailed, reason, msg))
 }
 
 func (r *TrainingJobReconciler) updateScalerSuccessd(scaleObj Scaler, trainingJob *kaiv1alpha1.TrainingJob) error {
 	msg := fmt.Sprintf("%s has Succeeded", scaleObj.GetFullName())
 	r.recorder.Event(scaleObj, corev1.EventTypeNormal, "", msg)
-	reason := fmt.Sprintf("%s%s", scaleObj.GetScaleType(), commonv1.JobSucceeded)
-	return r.updateScalerState(scaleObj, trainingJob, newCondition(commonv1.ScaleSucceeded, reason, msg))
+	reason := fmt.Sprintf("%s%s", scaleObj.GetScaleType(), common.JobSucceeded)
+	return r.updateScalerState(scaleObj, trainingJob, newCondition(common.ScaleSucceeded, reason, msg))
 }
 
 func (r *TrainingJobReconciler) updateScalerState(scaleObj Scaler, trainingJob *kaiv1alpha1.TrainingJob, condition common.JobCondition) error {
-	jobPhase := commonv1.Scaling
+	jobPhase := common.Scaling
 	currentJob := scaleObj.GetFullName()
-	if condition.Type == commonv1.ScaleSucceeded || condition.Type == commonv1.ScaleFailed {
-		jobPhase = commonv1.JobRunning
+	if condition.Type == common.ScaleSucceeded || condition.Type == common.ScaleFailed {
+		jobPhase = common.JobRunning
 		currentJob = ""
 	}
 

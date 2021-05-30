@@ -2,8 +2,9 @@ package controllers
 
 import (
 	"fmt"
+
 	kaiv1alpha1 "github.com/AliyunContainerService/et-operator/api/v1alpha1"
-	commonv1 "github.com/AliyunContainerService/et-operator/pkg/controllers/api/v1"
+	common "github.com/AliyunContainerService/et-operator/pkg/controllers/api/v1"
 	logger "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	//"k8s.io/apimachinery/pkg/api/errors"
@@ -81,9 +82,9 @@ func (r *TrainingJobReconciler) ScaleOutFailed(job *kaiv1alpha1.TrainingJob, sca
 	return r.DeleteWorkers(job, scaleOut.GetPodNames())
 }
 
-func (r *TrainingJobReconciler) workerReplicasStatus(jobStatus *commonv1.JobStatus, workers []corev1.Pod) (*commonv1.ReplicaStatus, int) {
-	workerStatuses := &commonv1.ReplicaStatus{}
-	jobStatus.ReplicaStatuses[commonv1.ReplicaType(kaiv1alpha1.ETReplicaTypeWorker)] = workerStatuses
+func (r *TrainingJobReconciler) workerReplicasStatus(jobStatus *common.JobStatus, workers []corev1.Pod) (*common.ReplicaStatus, int) {
+	workerStatuses := &common.ReplicaStatus{}
+	jobStatus.ReplicaStatuses[common.ReplicaType(kaiv1alpha1.ETReplicaTypeWorker)] = workerStatuses
 
 	_, evict := workerReplicaStatuses(workerStatuses, workers)
 	return workerStatuses, evict
@@ -109,7 +110,7 @@ func (r *TrainingJobReconciler) setScaleOutWorkers(job *kaiv1alpha1.TrainingJob,
 }
 
 func getWorkerPodsMaxIndex(pods []string) int {
-	if pods == nil || len(pods) == 0 {
+	if len(pods) == 0 {
 		return -1
 	}
 	maxIndex := 0

@@ -17,6 +17,8 @@ package controllers
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/AliyunContainerService/et-operator/pkg/util"
 	"github.com/go-logr/logr"
 	logger "github.com/sirupsen/logrus"
@@ -26,7 +28,6 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"time"
 
 	kaiv1alpha1 "github.com/AliyunContainerService/et-operator/api/v1alpha1"
 )
@@ -112,7 +113,7 @@ func parseEnvs(envs []kaiv1alpha1.EnvSpec) (result string) {
 
 func scalerScript(timeout int32, envs []kaiv1alpha1.EnvSpec, scriptFile string, workers []string, slots int) string {
 	var cmdStr string = ""
-	if envs != nil && len(envs) != 0 {
+	if len(envs) != 0 {
 		cmdStr = fmt.Sprintf("%s %s", parseEnvs(envs), "&&")
 	}
 	workerList := ""

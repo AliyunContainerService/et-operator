@@ -10,7 +10,7 @@ import (
 	logger "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -220,6 +220,35 @@ func (r *TrainingJobReconciler) updateScalerState(scaleObj Scaler, trainingJob *
 	setCondition(scaleObj.GetJobStatus(), condition)
 	updateStatusPhase(scaleObj.GetJobStatus(), condition.Type)
 
+	return nil
+}
+
+func (r *TrainingJobReconciler) executeScaleInAll(scaleObj Scaler, trainingJob *kaiv1alpha1.TrainingJob) error {
+	// delete worker
+	if err := r.DeleteAllWorkerPods(trainingJob); err != nil {
+		logger.Infof("fail to DeleteAllWorkerPods: %s", err.Error())
+		return err
+	}
+	if err := r.DeleteAllWorkerServices(trainingJob); err != nil {
+		logger.Infof("fail to DeleteAllWorkerServices: %s", err.Error())
+		return err
+	}
+
+	// summary scale msg
+	currentJob := scaleObj.GetFullName()
+	msg := fmt.Sprintf("%s has Succeeded", scaleObj.GetFullName())
+	r.recorder.Event(scaleObj, corev1.EventTypeNormal, "", msg)
+	reason := fmt.Sprintf("%s%s", scaleObj.GetScaleType(), common.JobSucceeded)
+	condition := newCondition(common.ScaleFailed, reason, msg)
+
+	// update training job status
+	setCondition(trainingJob.GetJobStatus(), condition)
+	updateStatusPhase(trainingJob.GetJobStatus(), common.JobFailed)
+	updateTrainingJobCurrentScaler(trainingJob.GetJobStatus(), currentJob)
+
+	// update scaler status
+	setCondition(scaleObj.GetJobStatus(), condition)
+	updateStatusPhase(scaleObj.GetJobStatus(), condition.Type)
 	return nil
 }
 

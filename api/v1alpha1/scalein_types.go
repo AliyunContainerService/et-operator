@@ -17,6 +17,7 @@ package v1alpha1
 
 import (
 	"fmt"
+
 	common "github.com/AliyunContainerService/et-operator/pkg/controllers/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -43,6 +44,7 @@ type ScaleInSpec struct {
 type ToDeleteSpec struct {
 	Count    int      `json:"count,omitempty"`
 	PodNames []string `json:"podNames,omitempty"`
+	All      bool     `json:"all,omitempty"`
 }
 
 // ScaleInStatus defines the observed state of ScaleIn

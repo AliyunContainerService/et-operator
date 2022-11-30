@@ -11,6 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	//"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"strconv"
 	"strings"
@@ -111,6 +112,8 @@ func (r *TrainingJobReconciler) handleWorkersFailed(job *kaiv1alpha1.TrainingJob
 	currentWorkers = sortPodNames(job.Name, currentWorkers)
 	currentWorkersChange := strings.Compare(strings.Join(currentWorkers, ","),
 		strings.Join(job.Status.CurrentWorkers, ",")) != 0
+	logger.Infof("trainingjob(%v/%v) old current workers: %s", job.Namespace, job.Name, strings.Join(job.Status.CurrentWorkers, ","))
+	logger.Infof("trainingjob(%v/%v) new current workers: %s", job.Namespace, job.Name, strings.Join(currentWorkers, ","))
 
 	// update hostfile when find workers state updated
 	if currentWorkersChange && hasCondition(*job.GetJobStatus(), common.JobRunning) {
@@ -130,10 +133,11 @@ func (r *TrainingJobReconciler) handleWorkersFailed(job *kaiv1alpha1.TrainingJob
 	restartPolicy := jobRestartPolicy(job)
 	for _, name := range job.Status.TargetWorkers {
 		if pod, ok := currentPods[name]; ok {
+			// deal pod fail
 			if podNeedRestart(restartPolicy, pod) {
 				restartPods = append(restartPods, pod.Name)
 			}
-		} else {
+		} else { // deal worker in  TargetWorkers，not in apiserver
 			if restartPolicy == common.RestartPolicyAlways {
 				restartPods = append(restartPods, name)
 			}
@@ -159,6 +163,7 @@ func (r *TrainingJobReconciler) handleWorkersFailed(job *kaiv1alpha1.TrainingJob
 			return err
 		}
 		r.recorder.Event(job, corev1.EventTypeNormal, trainingJobWorkerCreated, msg)
+		// replace  failed pod with new pod in TargetWorkers
 		job.Status.TargetWorkers = append(filterNames(job.Status.TargetWorkers, restartPods, true), createPods...)
 	}
 
@@ -242,6 +247,7 @@ func (r *TrainingJobReconciler) createWorkers(job *kaiv1alpha1.TrainingJob, work
 			return err
 		}
 	}
+	logger.Infof("Success trainingjob(%v/%v) createWorkers", job.Namespace, job.Name)
 	return nil
 }
 
@@ -380,6 +386,8 @@ func (r *TrainingJobReconciler) DeleteWorkerServices(job *kaiv1alpha1.TrainingJo
 		}
 		r.recorder.Eventf(job, corev1.EventTypeNormal, trainingJobSucceededReason, "Deleted service: %v", svc.Name)
 	}
+	logger.Infof("Success trainingjob(%v/%v) DeleteWorkerServices", job.Namespace, job.Name)
+
 	return nil
 }
 
@@ -407,6 +415,7 @@ func (r *TrainingJobReconciler) DeleteWorkerPods(job *kaiv1alpha1.TrainingJob, p
 		}
 		r.recorder.Eventf(job, corev1.EventTypeNormal, trainingJobSucceededReason, "Deleted pod %s", pod.Name)
 	}
+	logger.Infof("Success trainingjob(%v/%v) DeleteWorkerPods", job.Namespace, job.Name)
 	return nil
 }
 

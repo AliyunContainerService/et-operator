@@ -14,7 +14,7 @@
 package v1
 
 import (
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -48,6 +48,9 @@ type JobStatus struct {
 
 	// record scaleout/scalein name when scaling. e.g. (default/scaleout-sample)
 	CurrentScaler string `json:"currentScaler,omitempty"`
+
+	//The number of times the Job has been restarted
+	RestartCount int32 `json:"restartCount"`
 }
 
 // ReplicaType represents the type of the replica. Each operator needs to define its
@@ -140,9 +143,12 @@ const (
 
 	WorkersCreated  JobConditionType = "WorkersCreated"
 	WorkersReady    JobConditionType = "WorkersReady"
-	WorkersNotReady JobConditionType = "WorkersNotReady"
+	WorkersNotReady JobConditionType = "WorkersNotReady" // no use
 	LauncherCreated JobConditionType = "LauncherCreated"
-	LauncherReady   JobConditionType = "LauncherReady"
+	LauncherReady   JobConditionType = "LauncherReady" // no use
+
+	// Timeout for wait min worker, clean all subresource
+	WaitingTimeout JobConditionType = "WaitingTimeout"
 )
 
 // CleanPodPolicy describes how to deal with pods when the job is finished.

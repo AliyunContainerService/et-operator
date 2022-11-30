@@ -213,10 +213,12 @@ func (r *TrainingJobReconciler) updateScalerState(scaleObj Scaler, trainingJob *
 		currentJob = ""
 	}
 
+	// update job status
 	setCondition(trainingJob.GetJobStatus(), condition)
 	updateStatusPhase(trainingJob.GetJobStatus(), jobPhase)
 	updateTrainingJobCurrentScaler(trainingJob.GetJobStatus(), currentJob)
 
+	// update scale status
 	setCondition(scaleObj.GetJobStatus(), condition)
 	updateStatusPhase(scaleObj.GetJobStatus(), condition.Type)
 

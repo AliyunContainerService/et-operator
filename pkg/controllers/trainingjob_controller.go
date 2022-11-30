@@ -18,7 +18,9 @@ package controllers
 import (
 	"context"
 	"fmt"
+
 	kaiv1alpha1 "github.com/AliyunContainerService/et-operator/api/v1alpha1"
+	common "github.com/AliyunContainerService/et-operator/pkg/controllers/api/v1"
 	commonv1 "github.com/AliyunContainerService/et-operator/pkg/controllers/api/v1"
 	"github.com/go-logr/logr"
 	logger "github.com/sirupsen/logrus"
@@ -31,12 +33,15 @@ import (
 	k8scontroller "k8s.io/kubernetes/pkg/controller"
 
 	"reflect"
+
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	//"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"time"
+
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"time"
 )
 
 const (
@@ -207,9 +212,14 @@ func (r *TrainingJobReconciler) ReconcileJobs(job *kaiv1alpha1.TrainingJob) (res
 		r.updateObjectStatus(job, oldJobStatus)
 	}()
 
+	logger.Infof("Reconcile job %s/%s for %s", job.Namespace, job.Name, job.Status.Phase)
 	switch job.Status.Phase {
-	case commonv1.JobSucceeded, commonv1.JobFailed:
+	case commonv1.JobSucceeded:
 		err = r.cleanup(job)
+	case commonv1.JobFailed:
+		err = r.restartJob(job)
+	case commonv1.WaitingTimeout:
+		err = r.cleanupAll(job)
 	case "", commonv1.JobCreated:
 		r.initializeJob(job)
 		err = r.reconcileResource(job)
@@ -247,6 +257,20 @@ func (r *TrainingJobReconciler) initializeJob(job *kaiv1alpha1.TrainingJob) {
 	return
 }
 
+func (r *TrainingJobReconciler) resetJobStatus(job *kaiv1alpha1.TrainingJob) {
+	// reset conditions for newSteps work
+	job.Status.Conditions = []common.JobCondition{}
+	job.Status.CurrentWorkers = []string{}
+	job.Status.TargetWorkers = []string{}
+	initializeJobStatuses(job.GetJobStatus(), kaiv1alpha1.ETReplicaTypeLauncher)
+	initializeJobStatuses(job.GetJobStatus(), kaiv1alpha1.ETReplicaTypeWorker)
+	msg := fmt.Sprintf("TrainingJob %s is created.", job.Name)
+	updateJobConditions(job.GetJobStatus(), commonv1.JobCreated, trainingJobCreatedReason, msg)
+	updatePhase(job.GetJobStatus(), commonv1.JobCreated)
+	logger.Infof(msg)
+	return
+}
+
 func (r *TrainingJobReconciler) cleanup(job *kaiv1alpha1.TrainingJob) error {
 	if isCleanUpPods(job.Spec.CleanPodPolicy) {
 		if err := r.DeleteAllWorkerPods(job); err != nil {
@@ -257,6 +281,64 @@ func (r *TrainingJobReconciler) cleanup(job *kaiv1alpha1.TrainingJob) error {
 		}
 		logger.Infof("trainingjob(%v/%v) is %s, reconcile finished.", job.Namespace, job.Name, job.Status.Phase)
 		return nil
+	}
+
+	return nil
+}
+func (r *TrainingJobReconciler) cleanupAll(job *kaiv1alpha1.TrainingJob) error {
+	if err := r.DeleteAllWorkerPods(job); err != nil {
+		logger.Infof("trainingjob(%v/%v) fail to DeleteAllWorkerPods", job.Namespace, job.Name)
+		return err
+	}
+	if err := r.DeleteAllWorkerServices(job); err != nil {
+		return err
+	}
+	logger.Infof("trainingjob(%v/%v) is %s, reconcile finished.", job.Namespace, job.Name, job.Status.Phase)
+	return nil
+
+}
+
+func (r *TrainingJobReconciler) needRestartJob(job *kaiv1alpha1.TrainingJob) bool {
+	restartPolicy := job.Spec.RestartPolicy
+	backoffLimit := *job.Spec.BackoffLimit
+	restartCount := job.Status.RestartCount
+	logger.Infof("trainingjob(%v/%v) check restart, current restartcount: %d", job.Namespace, job.Name, restartCount)
+	if restartPolicy == commonv1.RestartPolicyOnFailure && restartCount < backoffLimit {
+		job.Status.RestartCount = restartCount + 1
+		logger.Infof("trainingjob(%v/%v) need to restart", job.Namespace, job.Name)
+		return true
+	}
+	logger.Infof("trainingjob(%v/%v) no need to restart", job.Namespace, job.Name)
+	return false
+}
+func (r *TrainingJobReconciler) restartJob(job *kaiv1alpha1.TrainingJob) error {
+	if r.needRestartJob(job) {
+		// reset job status
+
+		r.resetJobStatus(job)
+		// delete worker
+		if err := r.DeleteAllWorkerPods(job); err != nil {
+			logger.Errorf("trainingjob(%v/%v) fail to Delete All Workers", job.Namespace, job.Name)
+			return err
+		}
+		// delete launcher
+		if err := r.DeleteLauncher(job); err != nil {
+			logger.Errorf("trainingjob(%v/%v) fail to Delete Launcher pod", job.Namespace, job.Name)
+			return err
+		}
+
+		// delete service
+		if err := r.DeleteAllWorkerServices(job); err != nil {
+			logger.Errorf("trainingjob(%v/%v) fail to Delete All Service", job.Namespace, job.Name)
+			return err
+		}
+		r.recorder.Eventf(job, corev1.EventTypeNormal, trainingJobSucceededReason, "Delete subresource for restart")
+
+		// recreate
+		if err := r.reconcileResource(job); err != nil {
+			logger.Errorf("trainingjob(%v/%v) fail to reconcileResource", job.Namespace, job.Name)
+			return err
+		}
 	}
 
 	return nil

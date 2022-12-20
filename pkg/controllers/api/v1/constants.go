@@ -15,4 +15,8 @@ const (
 
 	// JobRoleLabel represents the label key for the job role, e.g. the value is master
 	JobRoleLabel = "job-role"
+
+	JobSupervisorStaus = "job-supervisor.kube-ai.io/job-status"
+
+	Timeout = "timeout"
 )

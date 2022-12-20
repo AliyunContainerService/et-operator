@@ -17,6 +17,9 @@ const (
 	trainingJobRunningReason = "TrainingJobRunning"
 	// trainingJobFailedReason is added in a trainingjob when it is failed.
 	trainingJobFailedReason = "TrainingJobFailed"
+
+	WaitingResourceTimeoutReason = "WaitingResourceTimeout"
+
 	// trainingJobEvict
 	trainingJobEvict = "TrainingJobEvicted"
 	// trainingJobWorkerException

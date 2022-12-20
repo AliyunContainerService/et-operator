@@ -65,8 +65,6 @@ spec:
                 type: integer
               toDelete:
                 properties:
-                  all:
-                    type: boolean
                   count:
                     type: integer
                   podNames:

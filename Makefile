@@ -2,7 +2,7 @@
 # Image URL to use all building/pushing image targets
 # IMG ?= controller:latest
 GIT_SHORT_COMMIT=$(shell git rev-parse --short HEAD)
-IMG ?= registry.cn-hangzhou.aliyuncs.com/kube-ai/et-controller:${GIT_SHORT_COMMIT}
+IMG ?= ai-studio-registry.cn-beijing.cr.aliyuncs.com/kube-ai/et-controller:${GIT_SHORT_COMMIT}
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
 
@@ -25,7 +25,7 @@ manager: generate fmt vet
 
 # Run against the configured Kubernetes cluster in ~/.kube/config
 run: generate fmt vet manifests
-	GOOS=linux GOARCH=amd64 GO111MODULE=off go run ./main.go
+	go run ./main.go
 
 # Run against the configured Kubernetes cluster in ~/.kube/config
 run-local: generate fmt vet manifests

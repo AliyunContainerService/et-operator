@@ -44,7 +44,6 @@ type ScaleInSpec struct {
 type ToDeleteSpec struct {
 	Count    int      `json:"count,omitempty"`
 	PodNames []string `json:"podNames,omitempty"`
-	All      bool     `json:"all,omitempty"`
 }
 
 // ScaleInStatus defines the observed state of ScaleIn

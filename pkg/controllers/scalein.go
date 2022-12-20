@@ -21,19 +21,6 @@ func (r *TrainingJobReconciler) executeScaleIn(job *kaiv1alpha1.TrainingJob, sca
 
 	initializeJobStatus(scaleIn.GetJobStatus())
 
-	// deal with scale in all
-	if scaleIn.Spec.ToDelete.All {
-		if err := r.executeScaleInAll(scaleIn, job); err != nil {
-			msg := fmt.Sprintf("%s execute scale in all fail, error: %v", scaleIn.GetFullName(), err)
-			logger.Info(msg)
-			r.updateScalerFailed(scaleIn, job, msg)
-		}
-		logger.Infof("%s success scale in all", scaleIn.GetFullName())
-		return nil
-	} else {
-		logger.Infof("%s  scale in all flag is False, skip scale in all", scaleIn.GetFullName())
-	}
-
 	//TODO: Validate the scalein count for minSize
 	err := r.setsSaleInToDelete(job, scaleIn)
 	if err != nil {

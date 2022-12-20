@@ -147,8 +147,8 @@ const (
 	LauncherCreated JobConditionType = "LauncherCreated"
 	LauncherReady   JobConditionType = "LauncherReady" // no use
 
-	// Timeout for wait min worker, clean all subresource
-	WaitingTimeout JobConditionType = "WaitingTimeout"
+	// Suspended for wait min worker, clean all subresource
+	Suspended JobConditionType = "Suspended"
 )
 
 // CleanPodPolicy describes how to deal with pods when the job is finished.

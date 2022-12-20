@@ -240,10 +240,12 @@ func (r *TrainingJobReconciler) createWorkers(job *kaiv1alpha1.TrainingJob, work
 	for _, podName := range workers {
 		index, err := getWorkerIndex(job.Name, podName)
 		if err != nil {
+			logger.Infof("trainingjob(%v/%v) fail to getWorkerIndex: %++v ", job.Namespace, job.Name, err)
 			return err
 		}
 		_, err = r.createWorker(job, int32(index), newPod)
 		if err != nil {
+			logger.Infof("trainingjob(%v/%v) fail to createWorker: %++v ", job.Namespace, job.Name, err)
 			return err
 		}
 	}
@@ -284,6 +286,7 @@ func (r *TrainingJobReconciler) createWorker(job *kaiv1alpha1.TrainingJob, index
 				r.recorder.Eventf(job, corev1.EventTypeWarning, trainingJobFailedReason, "worker pod created failed: %v", err)
 				return nil, err
 			}
+			logger.Infof("success to create pod: %s/%s", name, job.Namespace)
 		} else {
 			return nil, err
 		}

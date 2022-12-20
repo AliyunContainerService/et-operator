@@ -194,8 +194,7 @@ func GenLabels(jobName string) map[string]string {
 
 func (r *TrainingJobReconciler) ReconcileJobs(job *kaiv1alpha1.TrainingJob) (result reconcile.Result, err error) {
 	oldJobStatus := job.Status.DeepCopy()
-
-	logger.Infof("jobName: %v, phase %s", job.Name, job.Status.Phase)
+	logger.Infof("Reconcile job %s/%s for %s", job.Namespace, job.Name, job.Status.Phase)
 
 	defer func() {
 		latestJob := &kaiv1alpha1.TrainingJob{}
@@ -212,13 +211,18 @@ func (r *TrainingJobReconciler) ReconcileJobs(job *kaiv1alpha1.TrainingJob) (res
 		r.updateObjectStatus(job, oldJobStatus)
 	}()
 
-	logger.Infof("Reconcile job %s/%s for %s", job.Namespace, job.Name, job.Status.Phase)
+	if r.checkTimeOut(job) {
+		logger.Infof("job %s/%s receive timeout annotation", job.Namespace, job.Name)
+		msg := fmt.Sprintf("TrainingJob %s is waiting resource timeout.", job.Name)
+		updateJobConditions(job.GetJobStatus(), commonv1.Suspended, WaitingResourceTimeoutReason, msg)
+		updatePhase(job.GetJobStatus(), commonv1.Suspended)
+	}
 	switch job.Status.Phase {
 	case commonv1.JobSucceeded:
 		err = r.cleanup(job)
 	case commonv1.JobFailed:
 		err = r.restartJob(job)
-	case commonv1.WaitingTimeout:
+	case commonv1.Suspended:
 		err = r.cleanupAll(job)
 	case "", commonv1.JobCreated:
 		r.initializeJob(job)
@@ -230,7 +234,6 @@ func (r *TrainingJobReconciler) ReconcileJobs(job *kaiv1alpha1.TrainingJob) (res
 	default:
 		logger.Warnf("job %s unknown status %s", job.Name, job.Status.Phase)
 	}
-
 	if err != nil {
 		if IsRequeueError(err) {
 			return RequeueAfterInterval(r.PollInterval, nil)
@@ -240,6 +243,15 @@ func (r *TrainingJobReconciler) ReconcileJobs(job *kaiv1alpha1.TrainingJob) (res
 	return NoRequeue()
 }
 
+func (r *TrainingJobReconciler) checkTimeOut(job *kaiv1alpha1.TrainingJob) bool {
+	annotation := job.Annotations
+	if status, ok := annotation[common.JobSupervisorStaus]; ok {
+		if status == common.Timeout {
+			return true
+		}
+	}
+	return false
+}
 func (r *TrainingJobReconciler) initializeJob(job *kaiv1alpha1.TrainingJob) {
 	if job.Status.Conditions == nil {
 		initializeJobStatuses(job.GetJobStatus(), kaiv1alpha1.ETReplicaTypeLauncher)
@@ -293,6 +305,11 @@ func (r *TrainingJobReconciler) cleanupAll(job *kaiv1alpha1.TrainingJob) error {
 	if err := r.DeleteAllWorkerServices(job); err != nil {
 		return err
 	}
+
+	if err := r.DeleteLauncher(job); err != nil {
+		logger.Errorf("trainingjob(%v/%v) fail to Delete Launcher pod", job.Namespace, job.Name)
+		return err
+	}
 	logger.Infof("trainingjob(%v/%v) is %s, reconcile finished.", job.Namespace, job.Name, job.Status.Phase)
 	return nil
 
@@ -339,6 +356,8 @@ func (r *TrainingJobReconciler) restartJob(job *kaiv1alpha1.TrainingJob) error {
 			logger.Errorf("trainingjob(%v/%v) fail to reconcileResource", job.Namespace, job.Name)
 			return err
 		}
+	} else {
+		r.cleanup(job)
 	}
 
 	return nil

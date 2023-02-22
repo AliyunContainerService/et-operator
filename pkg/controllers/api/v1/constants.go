@@ -18,5 +18,9 @@ const (
 
 	JobSupervisorStaus = "job-supervisor.kube-ai.io/job-status"
 
+	JobSuspended = "job-supervisor.kube-ai.io/job-suspended"
+
 	Timeout = "timeout"
+
+	True = "true"
 )

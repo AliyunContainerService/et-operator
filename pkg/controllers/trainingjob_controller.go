@@ -211,7 +211,7 @@ func (r *TrainingJobReconciler) ReconcileJobs(job *kaiv1alpha1.TrainingJob) (res
 		r.updateObjectStatus(job, oldJobStatus)
 	}()
 
-	if r.checkTimeOut(job) {
+	if r.checkSuspended(job) {
 		logger.Infof("job %s/%s receive timeout annotation", job.Namespace, job.Name)
 		msg := fmt.Sprintf("TrainingJob %s is waiting resource timeout.", job.Name)
 		updateJobConditions(job.GetJobStatus(), commonv1.Suspended, WaitingResourceTimeoutReason, msg)
@@ -243,10 +243,10 @@ func (r *TrainingJobReconciler) ReconcileJobs(job *kaiv1alpha1.TrainingJob) (res
 	return NoRequeue()
 }
 
-func (r *TrainingJobReconciler) checkTimeOut(job *kaiv1alpha1.TrainingJob) bool {
+func (r *TrainingJobReconciler) checkSuspended(job *kaiv1alpha1.TrainingJob) bool {
 	annotation := job.Annotations
-	if status, ok := annotation[common.JobSupervisorStaus]; ok {
-		if status == common.Timeout {
+	if status, ok := annotation[common.JobSuspended]; ok {
+		if status == common.True {
 			return true
 		}
 	}

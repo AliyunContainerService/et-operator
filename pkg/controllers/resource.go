@@ -47,6 +47,10 @@ func newLauncher(obj interface{}) *corev1.Pod {
 		corev1.VolumeMount{
 			Name:      kubectlVolumeName,
 			MountPath: kubectlMountPath,
+		},
+		corev1.VolumeMount{
+			Name:      deepSpeedHostfileName,
+			MountPath: deepSpeedMountPath,
 		})
 
 	if job.GetAttachMode() == kaiv1alpha1.AttachModeKubexec {
@@ -65,6 +69,12 @@ func newLauncher(obj interface{}) *corev1.Pod {
 	podSpec.Spec.Volumes = append(podSpec.Spec.Volumes,
 		corev1.Volume{
 			Name: hostfileVolumeName,
+			VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{},
+			},
+		},
+		corev1.Volume{
+			Name: deepSpeedHostfileName,
 			VolumeSource: corev1.VolumeSource{
 				EmptyDir: &corev1.EmptyDirVolumeSource{},
 			},
@@ -97,6 +107,11 @@ func newLauncher(obj interface{}) *corev1.Pod {
 							Key:  kubexeclFileName,
 							Path: kubexeclFileName,
 							Mode: &scriptMode,
+						},
+						{
+							Key:  deepSpeedHostfileName,
+							Path: deepSpeedHostfileName,
+							Mode: &hostfileMode,
 						},
 					},
 				},
@@ -151,6 +166,7 @@ func kubedeliveryContainer() corev1.Container {
 		},
 	}
 }
+
 func initContainer(job *kaiv1alpha1.TrainingJob) corev1.Container {
 	originHostfilePath := path.Join(configMountPath, hostfileName)
 	mountHostfilePath := getHostfilePath(job)
@@ -164,6 +180,14 @@ func initContainer(job *kaiv1alpha1.TrainingJob) corev1.Container {
 		originDiscoverHostPath,
 		discoverHostPath,
 		discoverHostPath)
+
+	originDPHostfilePath := path.Join(configMountPath, deepSpeedHostfileName)
+	dpHostPath := path.Join(deepSpeedMountPath, hostfileName)
+	cpDPHostfile := fmt.Sprintf("cp %s %s && chmod 600 %s",
+		originDPHostfilePath,
+		dpHostPath,
+		dpHostPath)
+
 	return corev1.Container{
 		Name:            initContainerName,
 		Image:           initContainerImage,
@@ -174,6 +198,10 @@ func initContainer(job *kaiv1alpha1.TrainingJob) corev1.Container {
 				MountPath: hostfileMountPath,
 			},
 			{
+				Name:      deepSpeedHostfileName,
+				MountPath: deepSpeedMountPath,
+			},
+			{
 				Name:      configVolumeName,
 				MountPath: configMountPath,
 			},
@@ -181,7 +209,7 @@ func initContainer(job *kaiv1alpha1.TrainingJob) corev1.Container {
 		Command: []string{
 			"sh",
 			"-c",
-			strings.Join([]string{cpHostfile, cpDiscoverHostfile}, " && "),
+			strings.Join([]string{cpHostfile, cpDiscoverHostfile, cpDPHostfile}, " && "),
 		},
 		Resources: corev1.ResourceRequirements{
 			Limits: corev1.ResourceList{
@@ -412,17 +440,35 @@ shift
 			},
 		},
 		Data: map[string]string{
-			kubexeclFileName: kubExecCmd,
-			hostfileName:     getHostfileContent(job.Status.CurrentWorkers, getSlots(job)),
-			discoverHostName: getDiscoverHostContent(job),
+			kubexeclFileName:      kubExecCmd,
+			hostfileName:          getHostfileContent(job.Status.CurrentWorkers, getSlots(job)),
+			discoverHostName:      getDiscoverHostContent(job),
+			deepSpeedHostfileName: getDeepSpeedHostfileContent(job.Status.CurrentWorkers, getSlots(job)),
 		},
 	}
 }
 
+// Elastic Horovod hostfile used for host-discovery-script.
+// see: https://horovod.readthedocs.io/en/stable/elastic_include.html
+// eg:
+//    deep-speed-et-worker-0:1
+//    deep-speed-et-worker-1:1
 func getHostfileContent(workers []string, slot int) string {
 	var buffer bytes.Buffer
 	for _, worker := range workers {
 		buffer.WriteString(fmt.Sprintf("%s:%d\n", worker, slot))
+	}
+	return buffer.String()
+}
+
+// DeepSpeed hostfile
+// eg:
+//    deep-speed-et-worker-0 slots=1
+//    deep-speed-et-worker-1 slots=1
+func getDeepSpeedHostfileContent(workers []string, slot int) string {
+	var buffer bytes.Buffer
+	for _, worker := range workers {
+		buffer.WriteString(fmt.Sprintf("%s slots=%d\n", worker, slot))
 	}
 	return buffer.String()
 }

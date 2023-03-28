@@ -299,7 +299,7 @@ func newService(obj interface{}, name string, index string) *corev1.Service {
 					Port: 22,
 				},
 				{
-					Name: "kubeai-port",
+					Name: "kubeai-service-port",
 					Port: 9009,
 				},
 			},

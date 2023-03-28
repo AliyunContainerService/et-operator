@@ -10,7 +10,7 @@ import (
 	logger "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -213,10 +213,12 @@ func (r *TrainingJobReconciler) updateScalerState(scaleObj Scaler, trainingJob *
 		currentJob = ""
 	}
 
+	// update job status
 	setCondition(trainingJob.GetJobStatus(), condition)
 	updateStatusPhase(trainingJob.GetJobStatus(), jobPhase)
 	updateTrainingJobCurrentScaler(trainingJob.GetJobStatus(), currentJob)
 
+	// update scale status
 	setCondition(scaleObj.GetJobStatus(), condition)
 	updateStatusPhase(scaleObj.GetJobStatus(), condition.Type)
 
@@ -227,7 +229,7 @@ func filterAvailableScaler(scaleItem Scaler, job *kaiv1alpha1.TrainingJob) bool 
 	if isScaleFinished(*scaleItem.GetJobStatus()) {
 		return false
 	}
-	return v1.IsControlledBy(scaleItem, job)
+	return metav1.IsControlledBy(scaleItem, job)
 }
 
 func getScaleIn(name types.NamespacedName, client client.Client) (*kaiv1alpha1.ScaleIn, error) {

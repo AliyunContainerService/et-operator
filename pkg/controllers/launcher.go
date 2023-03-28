@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+
 	kaiv1alpha1 "github.com/AliyunContainerService/et-operator/api/v1alpha1"
 	commonv1 "github.com/AliyunContainerService/et-operator/pkg/controllers/api/v1"
 	"github.com/AliyunContainerService/et-operator/pkg/util"
@@ -11,7 +12,9 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	utilpointer "k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 )
@@ -197,6 +200,7 @@ func (r *TrainingJobReconciler) CreateLauncher(obj interface{}) (*corev1.Pod, er
 		r.recorder.Eventf(job, corev1.EventTypeWarning, trainingJobFailedReason, "launcher pod created failed: %v", err)
 		return nil, err
 	}
+	logger.Infof("Success trainingjob(%v/%v) CreateLauncher", job.Namespace, job.Name)
 	return launcher, nil
 }
 
@@ -250,4 +254,36 @@ func (r *TrainingJobReconciler) GetLauncherRoleBinding(obj interface{}) (*rbacv1
 		r.Create(context.Background(), newLauncherRoleBinding(obj))
 	}
 	return rb, nil
+}
+
+func (r *TrainingJobReconciler) DeleteLauncher(job *kaiv1alpha1.TrainingJob) error {
+	// delete pod
+	if err := r.deleteLauncherPod(job); err != nil {
+		logger.Errorf("trainingjob(%v/%v) fail to deleteLauncherPod", job.Namespace, job.Name)
+		return err
+	}
+	logger.Infof("Success trainingjob(%v/%v) DeleteLauncher", job.Namespace, job.Name)
+
+	// todo:delete sa
+	// todo:delete role
+	// todo: delete cm
+	return nil
+}
+func (r *TrainingJobReconciler) deleteLauncherPod(job *kaiv1alpha1.TrainingJob) error {
+	launcher, err := r.GetLauncherJob(job)
+	if err != nil {
+		logger.Errorf("trainingjob(%v/%v) fail to GetLauncherJob", job.Namespace, job.Name)
+		return err
+	}
+	if launcher == nil {
+		logger.Infof("trainingjob(%v/%v) launcher not found", job.Namespace, job.Name)
+		return nil
+	}
+	deleteOptions := &client.DeleteOptions{GracePeriodSeconds: utilpointer.Int64Ptr(0)}
+	if err := r.Delete(context.Background(), launcher, deleteOptions); err != nil && !errors.IsNotFound(err) {
+		r.recorder.Eventf(job, corev1.EventTypeWarning, trainingJobFailedReason, "Error deleting pod %s: %v", launcher.Name, err)
+		//return err
+	}
+	r.recorder.Eventf(job, corev1.EventTypeNormal, trainingJobSucceededReason, "Deleted pod %s", launcher.Name)
+	return nil
 }

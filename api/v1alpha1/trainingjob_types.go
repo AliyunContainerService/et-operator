@@ -49,6 +49,20 @@ type TrainingJobSpec struct {
 	// Defaults to 1.
 	// +optional
 	SlotsPerWorker *int32 `json:"slotsPerWorker,omitempty"`
+
+	// Restart policy for training job
+	// One of OnFailure, Never.
+	// Default to Never.
+	// +kubebuilder:default:="Never"
+	// +kubebuilder:validation:Enum=Never;OnFailure
+	// +optional
+	RestartPolicy common.RestartPolicy `json:"restartPolicy,omitempty"`
+
+	// Optional number of retries to execute script.
+	// +optional
+	// +kubebuilder:default:=6
+	// +kubebuilder:validation:Minimum=0
+	BackoffLimit *int32 `json:"backoffLimit,omitempty"`
 }
 
 type ETReplicaSpecs struct {

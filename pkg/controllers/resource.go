@@ -3,6 +3,9 @@ package controllers
 import (
 	"bytes"
 	"fmt"
+	"path"
+	"strings"
+
 	kaiv1alpha1 "github.com/AliyunContainerService/et-operator/api/v1alpha1"
 	"github.com/AliyunContainerService/et-operator/pkg/util"
 	logger "github.com/sirupsen/logrus"
@@ -10,8 +13,6 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"path"
-	"strings"
 )
 
 func newLauncher(obj interface{}) *corev1.Pod {
@@ -324,6 +325,10 @@ func newService(obj interface{}, name string, index string) *corev1.Service {
 				{
 					Name: "ssh-port",
 					Port: 22,
+				},
+				{
+					Name: "kubeai-service-port",
+					Port: 9009,
 				},
 			},
 		},

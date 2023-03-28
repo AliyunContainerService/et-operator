@@ -29,14 +29,10 @@ spec:
         description: ScaleIn is the Schema for the scaleins API
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
             type: string
           metadata:
             type: object
@@ -78,24 +74,19 @@ spec:
                 type: object
             type: object
           status:
-            description: Most recently observed status of the PyTorchJob. Read-only
-              (modified by the system).
+            description: Most recently observed status of the PyTorchJob. Read-only (modified by the system).
             properties:
               completionTime:
-                description: Represents time when the job was completed. It is not
-                  guaranteed to be set in happens-before order across separate operations.
-                  It is represented in RFC3339 form and is in UTC.
+                description: Represents time when the job was completed. It is not guaranteed to be set in happens-before order across separate operations. It is represented in RFC3339 form and is in UTC.
                 format: date-time
                 type: string
               conditions:
                 description: Conditions is an array of current observed job conditions.
                 items:
-                  description: JobCondition describes the state of the job at a certain
-                    point.
+                  description: JobCondition describes the state of the job at a certain point.
                   properties:
                     lastTransitionTime:
-                      description: Last time the condition transitioned from one status
-                        to another.
+                      description: Last time the condition transitioned from one status to another.
                       format: date-time
                       type: string
                     lastUpdateTime:
@@ -103,8 +94,7 @@ spec:
                       format: date-time
                       type: string
                     message:
-                      description: A human readable message indicating details about
-                        the transition.
+                      description: A human readable message indicating details about the transition.
                       type: string
                     reason:
                       description: The reason for the condition's last transition.
@@ -124,9 +114,7 @@ spec:
                 description: record scaleout/scalein name when scaling. e.g. (default/scaleout-sample)
                 type: string
               lastReconcileTime:
-                description: Represents last time when the job was reconciled. It
-                  is not guaranteed to be set in happens-before order across separate
-                  operations. It is represented in RFC3339 form and is in UTC.
+                description: Represents last time when the job was reconciled. It is not guaranteed to be set in happens-before order across separate operations. It is represented in RFC3339 form and is in UTC.
                 format: date-time
                 type: string
               phase:
@@ -134,8 +122,7 @@ spec:
                 type: string
               replicaStatuses:
                 additionalProperties:
-                  description: ReplicaStatus represents the current observed state
-                    of the replica.
+                  description: ReplicaStatus represents the current observed state of the replica.
                   properties:
                     active:
                       description: The number of actively running pods.
@@ -150,14 +137,14 @@ spec:
                       format: int32
                       type: integer
                   type: object
-                description: ReplicaStatuses is map of ReplicaType and ReplicaStatus,
-                  specifies the status of each replica.
+                description: ReplicaStatuses is map of ReplicaType and ReplicaStatus, specifies the status of each replica.
                 type: object
+              restartCount:
+                description: The number of times the Job has been restarted
+                format: int32
+                type: integer
               startTime:
-                description: Represents time when the job was acknowledged by the
-                  job controller. It is not guaranteed to be set in happens-before
-                  order across separate operations. It is represented in RFC3339 form
-                  and is in UTC.
+                description: Represents time when the job was acknowledged by the job controller. It is not guaranteed to be set in happens-before order across separate operations. It is represented in RFC3339 form and is in UTC.
                 format: date-time
                 type: string
               toDeletePods:
@@ -168,6 +155,7 @@ spec:
             required:
             - conditions
             - replicaStatuses
+            - restartCount
             type: object
         type: object
     served: true

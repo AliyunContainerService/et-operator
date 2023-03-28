@@ -65,6 +65,10 @@ const (
 	initContainerName       = "init-hostfile"
 	hostfileVolumeName      = "training-job-hostfile"
 	hostfileMountPath       = "/etc/edl"
+
+	// DeepSpeed hostfile
+	deepSpeedMountPath    = "/job"
+	deepSpeedHostfileName = "deepspeed-hostfile"
 )
 
 const (
@@ -248,6 +252,11 @@ func (r *TrainingJobReconciler) initializeJob(job *kaiv1alpha1.TrainingJob) {
 }
 
 func (r *TrainingJobReconciler) cleanup(job *kaiv1alpha1.TrainingJob) error {
+	if job.Spec.CleanPodPolicy == nil {
+		running := commonv1.CleanPodPolicyRunning
+		job.Spec.CleanPodPolicy = &running
+	}
+
 	if isCleanUpPods(job.Spec.CleanPodPolicy) {
 		if err := r.DeleteAllWorkerPods(job); err != nil {
 			return err

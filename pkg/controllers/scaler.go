@@ -231,7 +231,7 @@ func filterAvailableScaler(scaleItem Scaler, job *kaiv1alpha1.TrainingJob) bool 
 	}
 	return metav1.IsControlledBy(scaleItem, job)
 }
-                                    3qqa
+
 func getScaleIn(name types.NamespacedName, client client.Client) (*kaiv1alpha1.ScaleIn, error) {
 	scaleIn := &kaiv1alpha1.ScaleIn{}
 	if err := client.Get(context.TODO(), name, scaleIn); err != nil {

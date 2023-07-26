@@ -47,9 +47,12 @@ func init() {
 func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
+	var enableCreateSecret bool
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
+	flag.BoolVar(&enableCreateSecret, "enable-create-secret", true,
+		"Default true. Operator will create job's secret.")
 	flag.Parse()
 
 	//ctrl.SetLogger(zap.New(func(o *zap.Options) {
@@ -78,7 +81,7 @@ func main() {
 		os.Exit(1)
 	}
 	const jobPollInterval = "5s"
-	if err = controllers.NewReconciler(mgr, parseDurationOrPanic(jobPollInterval)).SetupWithManager(mgr); err != nil {
+	if err = controllers.NewReconciler(mgr, parseDurationOrPanic(jobPollInterval), enableCreateSecret).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "TrainingJob")
 		os.Exit(1)
 	}

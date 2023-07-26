@@ -24,7 +24,7 @@ import (
 
 func (r *TrainingJobReconciler) createTrainingJobWorkers(job *kaiv1alpha1.TrainingJob) error {
 
-	if job.GetAttachMode() == kaiv1alpha1.AttachModeSSH {
+	if r.EnableCreateSecret && job.GetAttachMode() == kaiv1alpha1.AttachModeSSH {
 		if cm, err := r.GetOrCreateSecret(job); cm == nil || err != nil {
 			msg := fmt.Sprintf("job(%s/%s) create secret failed, error: %v", job.Namespace, job.Name, err)
 			logger.Warn(msg)

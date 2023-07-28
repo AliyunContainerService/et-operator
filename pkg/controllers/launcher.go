@@ -4,19 +4,19 @@ import (
 	"context"
 	"fmt"
 
-	kaiv1alpha1 "github.com/AliyunContainerService/et-operator/api/v1alpha1"
-	commonv1 "github.com/AliyunContainerService/et-operator/pkg/controllers/api/v1"
-	"github.com/AliyunContainerService/et-operator/pkg/util"
 	logger "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilpointer "k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"k8s.io/apimachinery/pkg/api/meta"
+	kaiv1alpha1 "github.com/AliyunContainerService/et-operator/api/v1alpha1"
+	commonv1 "github.com/AliyunContainerService/et-operator/pkg/controllers/api/v1"
+	"github.com/AliyunContainerService/et-operator/pkg/util"
 )
 
 func (r *TrainingJobReconciler) createLauncher(job *kaiv1alpha1.TrainingJob) error {
@@ -193,7 +193,11 @@ func (r *TrainingJobReconciler) CreateLauncher(obj interface{}) (*corev1.Pod, er
 	}
 	launcher := newLauncher(job)
 	if job.GetAttachMode() == kaiv1alpha1.AttachModeSSH {
-		util.MountRsaKey(launcher, job.Name)
+		secretName := job.Name
+		if name, ok := job.Annotations[commonv1.SSHSecretName]; ok && name != "" {
+			secretName = name
+		}
+		util.MountRsaKey(launcher, secretName)
 	}
 	err := r.Create(context.Background(), launcher)
 	if err != nil {

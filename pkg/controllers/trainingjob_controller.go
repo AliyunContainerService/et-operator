@@ -107,12 +107,13 @@ func NewTrainingJobController(controllerImpl *TrainingJobReconciler) TrainingJob
 	}
 }
 
-func NewReconciler(mgr ctrl.Manager, pollInterval time.Duration) *TrainingJobReconciler {
+func NewReconciler(mgr ctrl.Manager, pollInterval time.Duration, enableCreateSecret bool) *TrainingJobReconciler {
 	r := &TrainingJobReconciler{
-		Client:       mgr.GetClient(),
-		Scheme:       mgr.GetScheme(),
-		PollInterval: pollInterval,
-		Log:          ctrl.Log.WithName("controllers").WithName("TrainingJob"),
+		Client:             mgr.GetClient(),
+		Scheme:             mgr.GetScheme(),
+		PollInterval:       pollInterval,
+		Log:                ctrl.Log.WithName("controllers").WithName("TrainingJob"),
+		EnableCreateSecret: enableCreateSecret,
 	}
 	r.recorder = mgr.GetEventRecorderFor(controllerName)
 	//r.ctrl = NewTrainingJobController(r)
@@ -127,11 +128,12 @@ var (
 // TrainingJobReconciler reconciles a TrainingJob object
 type TrainingJobReconciler struct {
 	client.Client
-	Log          logr.Logger
-	recorder     record.EventRecorder
-	Scheme       *runtime.Scheme
-	ctrl         TrainingJobController
-	PollInterval time.Duration
+	Log                logr.Logger
+	recorder           record.EventRecorder
+	Scheme             *runtime.Scheme
+	ctrl               TrainingJobController
+	PollInterval       time.Duration
+	EnableCreateSecret bool
 }
 
 func (r *TrainingJobReconciler) ControllerName() string {
@@ -150,8 +152,8 @@ type TrainingJobController struct {
 
 // +kubebuilder:rbac:groups="",resources=events,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups="rbac.authorization.k8s.io",resources=roles,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups="rbac.authorization.k8s.io",resources=rolebindings,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="rbac.authorization.k8s.io",resources=roles,verbs=get;list;watch;create
+// +kubebuilder:rbac:groups="rbac.authorization.k8s.io",resources=rolebindings,verbs=get;list;watch;create
 // +kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=pods,verbs=get;list;watch;create;update;patch;delete
@@ -422,17 +424,19 @@ func (r *TrainingJobReconciler) doSteps(job *kaiv1alpha1.TrainingJob, steps []St
 }
 
 func (r *TrainingJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
+	build := ctrl.NewControllerManagedBy(mgr).
 		For(&kaiv1alpha1.TrainingJob{}).
 		Owns(&kaiv1alpha1.ScaleIn{}).
 		Owns(&kaiv1alpha1.ScaleOut{}).
 		Owns(&corev1.Pod{}).
 		Owns(&corev1.Service{}).
-		Owns(&corev1.ConfigMap{}).
-		Owns(&corev1.Secret{}).
-		// Ignore status-only and metadata-only updates
-		//WithEventFilter(predicate.GenerationChangedPredicate{}).
-		Complete(r)
+		Owns(&corev1.ConfigMap{})
+
+	if r.EnableCreateSecret {
+		build = build.Owns(&corev1.Secret{})
+	}
+
+	return build.Complete(r)
 }
 
 // force overwrite RestartPolicy=Never

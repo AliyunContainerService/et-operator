@@ -41,7 +41,7 @@ type TrainingJobSpec struct {
 
 	// Specifies the mode when launcher attach to workers.
 	// available option is ssh / kubexec
-	// Defaults is kubexec.
+	// Defaults is ssh.
 	// +optional
 	LauncherAttachMode *string `json:"launcherAttachMode,omitempty"`
 

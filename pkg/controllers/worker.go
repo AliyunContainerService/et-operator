@@ -3,28 +3,26 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
 
-	kaiv1alpha1 "github.com/AliyunContainerService/et-operator/api/v1alpha1"
 	logger "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	utilpointer "k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	//"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"strconv"
-	"strings"
-
+	kaiv1alpha1 "github.com/AliyunContainerService/et-operator/api/v1alpha1"
 	common "github.com/AliyunContainerService/et-operator/pkg/controllers/api/v1"
 	"github.com/AliyunContainerService/et-operator/pkg/util"
-	"k8s.io/apimachinery/pkg/types"
-	utilpointer "k8s.io/utils/pointer"
 )
 
 func (r *TrainingJobReconciler) createTrainingJobWorkers(job *kaiv1alpha1.TrainingJob) error {
 
-	if job.GetAttachMode() == kaiv1alpha1.AttachModeSSH {
+	if r.EnableCreateSecret && job.GetAttachMode() == kaiv1alpha1.AttachModeSSH {
 		if cm, err := r.GetOrCreateSecret(job); cm == nil || err != nil {
 			msg := fmt.Sprintf("job(%s/%s) create secret failed, error: %v", job.Namespace, job.Name, err)
 			logger.Warn(msg)
@@ -280,7 +278,11 @@ func (r *TrainingJobReconciler) createWorker(job *kaiv1alpha1.TrainingJob, index
 		if errors.IsNotFound(err) {
 			worker := workerPodTempl(name, indexStr)
 			if job.GetAttachMode() == kaiv1alpha1.AttachModeSSH {
-				util.MountRsaKey(worker, job.Name)
+				secretName := job.Name
+				if name, ok := job.Annotations[common.SSHSecretName]; ok && name != "" {
+					secretName = name
+				}
+				util.MountRsaKey(worker, secretName)
 			}
 			if err = r.Create(context.Background(), worker); err != nil {
 				r.recorder.Eventf(job, corev1.EventTypeWarning, trainingJobFailedReason, "worker pod created failed: %v", err)

@@ -20,6 +20,8 @@ const (
 
 	JobSuspended = "job-supervisor.kube-ai.io/job-suspended"
 
+	SSHSecretName = "arena.kubeflow.org/ssh-secret"
+
 	Timeout = "timeout"
 
 	True = "true"

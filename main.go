@@ -47,11 +47,11 @@ func init() {
 func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
-	var enableCreateSecret bool
+	var createSSHSecret bool
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
-	flag.BoolVar(&enableCreateSecret, "enable-create-secret", true,
+	flag.BoolVar(&createSSHSecret, "create-ssh-secret", true,
 		"Default true. Operator will create job's secret.")
 	flag.Parse()
 
@@ -81,7 +81,7 @@ func main() {
 		os.Exit(1)
 	}
 	const jobPollInterval = "5s"
-	if err = controllers.NewReconciler(mgr, parseDurationOrPanic(jobPollInterval), enableCreateSecret).SetupWithManager(mgr); err != nil {
+	if err = controllers.NewReconciler(mgr, parseDurationOrPanic(jobPollInterval), createSSHSecret).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "TrainingJob")
 		os.Exit(1)
 	}

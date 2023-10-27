@@ -259,6 +259,7 @@ func (r *TrainingJobReconciler) checkSuspended(job *kaiv1alpha1.TrainingJob) boo
 	return false
 }
 func (r *TrainingJobReconciler) initializeJob(job *kaiv1alpha1.TrainingJob) {
+	initializeStatuses(job.GetStatus().(*kaiv1alpha1.TrainingJobStatus), job.Name)
 	if job.Status.Conditions == nil {
 		initializeJobStatuses(job.GetJobStatus(), kaiv1alpha1.ETReplicaTypeLauncher)
 		initializeJobStatuses(job.GetJobStatus(), kaiv1alpha1.ETReplicaTypeWorker)
@@ -282,6 +283,7 @@ func (r *TrainingJobReconciler) resetJobStatus(job *kaiv1alpha1.TrainingJob) {
 	job.Status.TargetWorkers = []string{}
 	initializeJobStatuses(job.GetJobStatus(), kaiv1alpha1.ETReplicaTypeLauncher)
 	initializeJobStatuses(job.GetJobStatus(), kaiv1alpha1.ETReplicaTypeWorker)
+	initializeStatuses(job.GetStatus().(*kaiv1alpha1.TrainingJobStatus), job.Name)
 	msg := fmt.Sprintf("TrainingJob %s is created.", job.Name)
 	updateJobConditions(job.GetJobStatus(), commonv1.JobCreated, trainingJobCreatedReason, msg)
 	updatePhase(job.GetJobStatus(), commonv1.JobCreated)

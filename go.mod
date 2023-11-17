@@ -3,7 +3,7 @@ module github.com/AliyunContainerService/et-operator
 go 1.13
 
 require (
-	github.com/go-logr/logr v0.1.0
+	github.com/go-logr/logr v1.2.0
 	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.5.0
 	github.com/sirupsen/logrus v1.4.2
@@ -23,6 +23,7 @@ require (
 )
 
 replace (
+	github.com/go-logr/logr => github.com/go-logr/logr v0.1.0
 	k8s.io/api => k8s.io/api v0.16.8
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.16.8
 	k8s.io/apimachinery => k8s.io/apimachinery v0.16.8
@@ -44,4 +45,5 @@ replace (
 	k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.16.8
 	k8s.io/metrics => k8s.io/metrics v0.16.8
 	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.16.8
+	k8s.io/utils => k8s.io/utils v0.0.0-20190801114015-581e00157fb1
 )

@@ -61,6 +61,7 @@ func (r *TrainingJobReconciler) executeScaleIn(job *kaiv1alpha1.TrainingJob, sca
 	if deleted {
 		job.Status.TargetWorkers = r.workersAfterScaler(job.Status.TargetWorkers, scaleIn)
 		job.Status.CurrentWorkers = currentWorkers
+		job.Status.Replicas = int32(len(currentWorkers))
 		r.updateScalerSuccessd(scaleIn, job)
 		return nil
 	}

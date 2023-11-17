@@ -116,6 +116,9 @@ type TrainingJobStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 	common.JobStatus `json:",inline"`
+	// used to work with HPA. do not modify this
+	WorkerSelector string `json:"workerSelector,omitempty"`
+	Replicas       int32  `json:"replicas,omitempty"`
 
 	TargetWorkers  []string `json:"targetWorkers,omitempty"`
 	CurrentWorkers []string `json:"currentWorkers,omitempty"`
@@ -126,6 +129,7 @@ type TrainingJobStatus struct {
 // +k8s:defaulter-gen=TypeMeta
 // +resource:path=trainingjob
 // +kubebuilder:subresource:status
+// +kubebuilder:subresource:scale:specpath=.spec.etReplicaSpecs.worker.replicas,statuspath=.status.replicas,selectorpath=.status.workerSelector
 // +kubebuilder:resource:scope=Namespaced
 // +kubebuilder:printcolumn:name="Phase",type=string,JSONPath=`.status.phase`
 // +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`

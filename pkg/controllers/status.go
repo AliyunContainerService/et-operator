@@ -1,11 +1,13 @@
 package controllers
 
 import (
+	"fmt"
+	"time"
+
 	kaiv1alpha1 "github.com/AliyunContainerService/et-operator/api/v1alpha1"
 	common "github.com/AliyunContainerService/et-operator/pkg/controllers/api/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"time"
 )
 
 const (
@@ -30,6 +32,14 @@ const (
 	// scalingInCreatedReason is added in a scalein when it is created.
 	scalingStartReason = "ScalingStart"
 )
+
+// initializeTrainingJobStatuses initializes the workerSelector for TrainingJob.
+func initializeStatuses(jobStatus *kaiv1alpha1.TrainingJobStatus, jobName string) {
+	jobStatus.WorkerSelector = fmt.Sprintf("%v=%v,%v=%v,%v=%v",
+		labelGroupName, kaiv1alpha1.GroupVersion.Group,
+		labelTrainingJobName, jobName,
+		labelTrainingRoleType, worker)
+}
 
 // initializeTrainingJobStatuses initializes the ReplicaStatuses for TrainingJob.
 func initializeJobStatuses(jobStatus *common.JobStatus, rtype kaiv1alpha1.ETReplicaType) {

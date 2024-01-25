@@ -36,14 +36,14 @@ Firstly, it will update the host config of `TrainingJob`,
 In horovod elastic mode, it needs a script that return the host's topology , the change of hosts will notify the launcher, then and it will shutdown the worker process not in hosts gracefully.  
   
 After the hostFile updated, `et-operator` start to detect whether the launch process exist, 
-when `et-operator` confirm that the scalein worker's launch process not exit, it will delete the worker's resource.  
+when `et-operator` confirm that the scalein worker's launch process not exist, it will delete the worker's resource.  
 
 ![ScaleIn](./docs/images/scalein.png)
 
 
 #### ScaleOut
 In `ScaleOut` CR, we can specify the trainingJob's name and the count that we want to scaleout. 
-When `et-operator` start to execute the scalein operation,
+When `et-operator` start to execute the scaleout operation,
 different from scaleIn, it will firstly create the new worker's resources.
 After worker's resources ready, then update the hostFile. 
   

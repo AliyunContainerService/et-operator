@@ -66,7 +66,6 @@ const (
 	initContainerMem        = "512Mi"
 	replicaIndexLabel       = "replica-index"
 	gpuResourceName         = "nvidia.com/gpu"
-	initContainerImage      = "alpine:3.10"
 	initContainerName       = "init-hostfile"
 	hostfileVolumeName      = "training-job-hostfile"
 	hostfileMountPath       = "/etc/edl"

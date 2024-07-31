@@ -6,13 +6,15 @@ import (
 	"path"
 	"strings"
 
-	kaiv1alpha1 "github.com/AliyunContainerService/et-operator/api/v1alpha1"
-	"github.com/AliyunContainerService/et-operator/pkg/util"
 	logger "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	kaiv1alpha1 "github.com/AliyunContainerService/et-operator/api/v1alpha1"
+	"github.com/AliyunContainerService/et-operator/pkg/config"
+	"github.com/AliyunContainerService/et-operator/pkg/util"
 )
 
 func newLauncher(obj interface{}) *corev1.Pod {
@@ -191,7 +193,7 @@ func initContainer(job *kaiv1alpha1.TrainingJob) corev1.Container {
 
 	return corev1.Container{
 		Name:            initContainerName,
-		Image:           initContainerImage,
+		Image:           config.Config.InitContainerImage,
 		ImagePullPolicy: corev1.PullIfNotPresent,
 		VolumeMounts: []corev1.VolumeMount{
 			{

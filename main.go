@@ -20,8 +20,6 @@ import (
 	"os"
 	"time"
 
-	kaiv1alpha1 "github.com/AliyunContainerService/et-operator/api/v1alpha1"
-	"github.com/AliyunContainerService/et-operator/pkg/controllers"
 	zapOpt "go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -30,6 +28,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	// +kubebuilder:scaffold:imports
 	"go.uber.org/zap/zapcore"
+
+	kaiv1alpha1 "github.com/AliyunContainerService/et-operator/api/v1alpha1"
+	"github.com/AliyunContainerService/et-operator/pkg/config"
+	"github.com/AliyunContainerService/et-operator/pkg/controllers"
 )
 
 var (
@@ -53,6 +55,7 @@ func main() {
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
 	flag.BoolVar(&createSSHSecret, "create-ssh-secret", true,
 		"Default true. Operator will create job's secret.")
+	flag.StringVar(&config.Config.InitContainerImage, "init-container-image", config.InitContainerImageDefault, "The image of the injected init container, will overwrite the value in config")
 	flag.Parse()
 
 	//ctrl.SetLogger(zap.New(func(o *zap.Options) {

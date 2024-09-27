@@ -458,8 +458,9 @@ shift
 // Elastic Horovod hostfile used for host-discovery-script.
 // see: https://horovod.readthedocs.io/en/stable/elastic_include.html
 // eg:
-//    deep-speed-et-worker-0:1
-//    deep-speed-et-worker-1:1
+//
+//	deep-speed-et-worker-0:1
+//	deep-speed-et-worker-1:1
 func getHostfileContent(workers []string, slot int) string {
 	var buffer bytes.Buffer
 	for _, worker := range workers {
@@ -470,8 +471,9 @@ func getHostfileContent(workers []string, slot int) string {
 
 // DeepSpeed hostfile
 // eg:
-//    deep-speed-et-worker-0 slots=1
-//    deep-speed-et-worker-1 slots=1
+//
+//	deep-speed-et-worker-0 slots=1
+//	deep-speed-et-worker-1 slots=1
 func getDeepSpeedHostfileContent(workers []string, slot int) string {
 	var buffer bytes.Buffer
 	for _, worker := range workers {

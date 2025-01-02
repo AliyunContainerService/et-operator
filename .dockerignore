@@ -1,0 +1,9 @@
+config/
+docs/
+examples/
+hack/
+.dockerignore
+.gitignore
+Dockerfile
+PROJECT
+README.md

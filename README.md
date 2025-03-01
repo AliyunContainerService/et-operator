@@ -20,7 +20,7 @@ The `et-operator` will receive the creation event, then create the sub resource 
 The `TrainingJob` will create workers pods and services, generate the `Secret` and `ConfigMap` for launcher pod,
 when all workers ready, then operator will create the launcher pod and sync pods status. 
 
-After launcher pod exit, `et-operator` will uppdate `TrainingJob` phase to `Success` or `Fail` according to pod's exit code,
+After launcher pod exit, `et-operator` will update `TrainingJob` phase to `Success` or `Fail` according to pod's exit code,
 then do the cleanup.
 
 ![TrainingJob Resource](./docs/images/trainingjob-resource.png)

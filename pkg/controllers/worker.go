@@ -125,6 +125,7 @@ func (r *TrainingJobReconciler) handleWorkersFailed(job *kaiv1alpha1.TrainingJob
 		job.Status.TargetWorkers = currentWorkers
 	}
 	job.Status.CurrentWorkers = currentWorkers
+	job.Status.Replicas = int32(len(currentWorkers))
 
 	// pod not exist in apiServer but in job workers
 	// for example: delete a worker
@@ -413,8 +414,8 @@ func (r *TrainingJobReconciler) DeleteWorkerPods(job *kaiv1alpha1.TrainingJob, p
 		workerPods = filterPodNames(workerPods, pods, false)
 	}
 	for _, pod := range workerPods {
-		deleteOptions := &client.DeleteOptions{GracePeriodSeconds: utilpointer.Int64Ptr(0)}
-		if err := r.Delete(context.Background(), &pod, deleteOptions); err != nil && !errors.IsNotFound(err) {
+		// deleteOptions := &client.DeleteOptions{GracePeriodSeconds: utilpointer.Int64Ptr(0)}
+		if err := r.Delete(context.Background(), &pod); err != nil && !errors.IsNotFound(err) {
 			r.recorder.Eventf(job, corev1.EventTypeWarning, trainingJobFailedReason, "Error deleting worker %s: %v", pod.Name, err)
 			//return err
 		}

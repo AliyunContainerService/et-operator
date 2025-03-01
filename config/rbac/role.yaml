@@ -166,11 +166,8 @@ rules:
   - rolebindings
   verbs:
   - create
-  - delete
   - get
   - list
-  - patch
-  - update
   - watch
 - apiGroups:
   - rbac.authorization.k8s.io
@@ -178,9 +175,6 @@ rules:
   - roles
   verbs:
   - create
-  - delete
   - get
   - list
-  - patch
-  - update
   - watch

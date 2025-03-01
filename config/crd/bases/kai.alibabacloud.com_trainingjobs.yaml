@@ -4,7 +4,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.4.1
+    controller-gen.kubebuilder.io/version: ""
   creationTimestamp: null
   name: trainingjobs.kai.alibabacloud.com
 spec:
@@ -13140,7 +13140,7 @@ spec:
                 x-kubernetes-preserve-unknown-fields: true
               launcherAttachMode:
                 description: Specifies the mode when launcher attach to workers. available
-                  option is ssh / kubexec Defaults is kubexec.
+                  option is ssh / kubexec Defaults is ssh.
                 type: string
               restartPolicy:
                 default: Never
@@ -13238,6 +13238,9 @@ spec:
                 description: ReplicaStatuses is map of ReplicaType and ReplicaStatus,
                   specifies the status of each replica.
                 type: object
+              replicas:
+                format: int32
+                type: integer
               restartCount:
                 description: The number of times the Job has been restarted
                 format: int32
@@ -13253,6 +13256,9 @@ spec:
                 items:
                   type: string
                 type: array
+              workerSelector:
+                description: used to work with HPA. do not modify this
+                type: string
             required:
             - conditions
             - replicaStatuses
@@ -13262,6 +13268,10 @@ spec:
     served: true
     storage: true
     subresources:
+      scale:
+        labelSelectorPath: .status.workerSelector
+        specReplicasPath: .spec.etReplicaSpecs.worker.replicas
+        statusReplicasPath: .status.replicas
       status: {}
 status:
   acceptedNames:

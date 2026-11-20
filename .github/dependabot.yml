@@ -1,0 +1,26 @@
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    labels: ["dependencies", "go"]
+    open-pull-requests-limit: 10
+    groups:
+      go-minor-patch:
+        update-types: [minor, patch]
+    ignore:
+      # k8s 依赖通过 replace 锁定在旧版本，major 升级会破坏兼容性
+      - dependency-name: "k8s.io/*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "sigs.k8s.io/*"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    labels: ["dependencies", "docker"]
+    open-pull-requests-limit: 5

@@ -8,6 +8,9 @@ updates:
     labels: ["dependencies", "go"]
     open-pull-requests-limit: 10
     groups:
+      # x 系单独成组，避免 v0.x 的 minor 跨度与其他依赖混在一个 PR
+      golang-x:
+        patterns: ["golang.org/x/*"]
       go-minor-patch:
         update-types: [minor, patch]
     ignore:

@@ -3,7 +3,7 @@ module github.com/AliyunContainerService/et-operator
 go 1.17
 
 require (
-	github.com/go-logr/logr v0.1.0
+	github.com/go-logr/logr v1.4.4
 	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.5.0
 	github.com/sirupsen/logrus v1.4.2

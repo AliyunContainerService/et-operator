@@ -1,4 +1,4 @@
-FROM golang:1.21.13-bullseye as builder
+FROM golang:1.24.6-bullseye as builder
 
 WORKDIR /workspace
 
